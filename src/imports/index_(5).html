@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloxs IBaaS — Portal do Originador</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0b1f3a;
+    --navy-mid: #132d54;
+    --blue: #1a6edb;
+    --blue-light: #4fa3ff;
+    --blue-xlight: #d6e8ff;
+    --white: #ffffff;
+    --off-white: #f7f9fc;
+    --gray-100: #f0f4f8;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-600: #64748b;
+    --gray-800: #1e293b;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --error: #dc2626;
+    --success: #059669;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: var(--white);
+    color: var(--text);
+  }
+
+  .login-wrapper {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ─── LEFT PANEL ─── */
+  .login-left {
+    width: 44%;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 52px 56px 44px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-left::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 480px; height: 480px;
+    border-radius: 50%;
+    background: rgba(26,110,219,0.07);
+    pointer-events: none;
+  }
+
+  .login-left::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: -80px;
+    width: 340px; height: 340px;
+    border-radius: 50%;
+    background: rgba(79,163,255,0.05);
+    pointer-events: none;
+  }
+
+  .brand-area { position: relative; z-index: 2; }
+
+  .bloxs-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 60px;
+  }
+
+  .bloxs-logo img {
+    height: 32px;
+    filter: brightness(0) invert(1);
+  }
+
+  .bloxs-logo-fallback {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: -0.5px;
+  }
+
+  .bloxs-logo-fallback span {
+    color: var(--blue-light);
+  }
+
+  .left-headline {
+    position: relative; z-index: 2;
+  }
+
+  .left-headline h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+    margin-bottom: 18px;
+  }
+
+  .left-headline h1 em {
+    font-style: normal;
+    color: var(--blue-light);
+  }
+
+  .left-headline p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.62);
+    max-width: 360px;
+  }
+
+  .left-rule {
+    width: 48px;
+    height: 2px;
+    background: var(--blue-light);
+    margin: 28px 0;
+    opacity: 0.5;
+  }
+
+  .left-bottom { position: relative; z-index: 2; }
+
+  .left-disclaimer {
+    font-size: 10.5px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.38);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 20px;
+  }
+
+  /* ─── RIGHT PANEL ─── */
+  .login-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 48px;
+    background: var(--white);
+  }
+
+  .login-box {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .login-box-header {
+    margin-bottom: 36px;
+  }
+
+  .login-box-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: -0.4px;
+    margin-bottom: 8px;
+  }
+
+  .login-box-header p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* toggle */
+  .tab-toggle {
+    display: flex;
+    background: var(--gray-100);
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 28px;
+    gap: 4px;
+  }
+
+  .tab-toggle button {
+    flex: 1;
+    padding: 9px 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-toggle button.active {
+    background: var(--white);
+    color: var(--navy);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  /* social buttons */
+  .social-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .btn-social {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+  }
+
+  .btn-social:hover {
+    border-color: var(--blue-light);
+    background: var(--blue-xlight);
+    color: var(--navy);
+  }
+
+  .btn-social .social-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-social .google-icon {
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="%23EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="%234285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="%23FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="%2334A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>') center/contain no-repeat;
+    width: 20px; height: 20px;
+  }
+
+  .btn-social .linkedin-icon {
+    color: #0077b5;
+    font-size: 17px;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .divider span {
+    font-size: 12px;
+    color: var(--gray-400);
+    white-space: nowrap;
+  }
+
+  /* form */
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--gray-800);
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+  }
+
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.18s, box-shadow 0.18s;
+    outline: none;
+    appearance: none;
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(26,110,219,0.1);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 14.5px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.18s;
+    margin-top: 6px;
+  }
+
+  .btn-primary:hover {
+    background: var(--navy-mid);
+  }
+
+  .btn-primary.loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .form-link {
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 18px;
+  }
+
+  .form-link a {
+    color: var(--blue);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .form-link a:hover { text-decoration: underline; }
+
+  .error-msg {
+    display: none;
+    font-size: 12px;
+    color: var(--error);
+    margin-top: 4px;
+  }
+
+  .input-error { border-color: var(--error) !important; }
+
+  /* demo hint */
+  .demo-hint {
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: var(--blue-xlight);
+    border: 1px solid var(--blue-light);
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--navy);
+    line-height: 1.5;
+  }
+
+  .demo-hint strong { font-weight: 600; }
+
+  .btn-demo {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+
+  .btn-demo:hover { background: var(--navy); }
+
+  /* responsive */
+  @media (max-width: 900px) {
+    .login-left { display: none; }
+    .login-right { padding: 40px 24px; }
+  }
+
+  /* hidden */
+  .hidden { display: none !important; }
+
+  /* section heading */
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="login-wrapper">
+
+  <!-- LEFT PANEL -->
+  <div class="login-left">
+    <div class="brand-area">
+      <div class="bloxs-logo">
+        <img 
+          src="https://bloxs.com.br/_next/static/media/logotype-bloxs.24b4579c.svg" 
+          alt="Bloxs"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+        <span class="bloxs-logo-fallback" style="display:none">Bloxs<span>.</span></span>
+      </div>
+
+      <div class="left-headline">
+        <div class="section-label">IBaaS · Investment Banking as a Service</div>
+        <h1>Estruture e distribua operações de <em>crédito privado</em> e operações estruturadas</h1>
+        <div class="left-rule"></div>
+        <p>Infraestrutura para originadores no mercado de capitais transformarem suas conexões em valores mobiliários — por meio de operações securitizadas, gestora de recursos e coordenação de ofertas públicas, no âmbito das Resoluções CVM 160 e 88 quando aplicável.</p>
+      </div>
+    </div>
+
+    <div class="left-bottom">
+      <div class="left-disclaimer">
+        A Bloxs atua por meio de entidades reguladas: Bloxs Securitizadora (RCVM 60), Bloxs Gestora de Recursos (CVM), Bloxs Coordenadora de Ofertas Públicas (RCVM 161). As operações disponibilizadas neste ambiente são restritas a investidores qualificados ou profissionais, conforme RCVM 30, e observam as regras de cadastro e prevenção à lavagem de dinheiro previstas na RCVM 50. O acesso ao portal não constitui oferta ou recomendação de investimento. Ambiente regulado e monitorado pela CVM e pelo Banco Central do Brasil.
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="login-right">
+    <div class="login-box">
+      <div class="login-box-header">
+        <h2>Acesse sua conta</h2>
+        <p>Portal exclusivo para originadores credenciados</p>
+      </div>
+
+      <!-- Tab toggle -->
+      <div class="tab-toggle">
+        <button id="tabEntrar" class="active" onclick="switchTab('entrar')">Acessar</button>
+        <button id="tabCadastrar" onclick="switchTab('cadastrar')">Cadastrar-se</button>
+      </div>
+
+      <!-- Social login (shown for both tabs) -->
+      <div class="social-group">
+        <button class="btn-social" onclick="socialLogin('google')">
+          <span class="social-icon google-icon"></span>
+          <span id="googleBtnText">Continuar com Google</span>
+        </button>
+        <button class="btn-social" onclick="socialLogin('linkedin')">
+          <span class="social-icon"><i class="fab fa-linkedin linkedin-icon"></i></span>
+          <span id="linkedinBtnText">Continuar com LinkedIn</span>
+        </button>
+      </div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span>ou continue com e-mail</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="formEntrar">
+        <form onsubmit="doLogin(); return false;" autocomplete="on">
+        <div class="form-group">
+          <label>E-mail corporativo</label>
+          <input type="email" id="loginEmail" name="email" placeholder="seu@email.com.br" autocomplete="email">
+          <span class="error-msg" id="loginEmailErr">Informe um e-mail válido.</span>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="loginSenha" name="password" placeholder="••••••••" autocomplete="current-password">
+          <span class="error-msg" id="loginSenhaErr">Senha obrigatória.</span>
+        </div>
+        <button type="submit" class="btn-primary">Acessar o portal</button>
+        </form>
+        <div class="form-link">
+          <a href="#">Esqueci minha senha</a>
+        </div>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="formCadastrar" class="hidden">
+      <form onsubmit="doRegister(); return false;" autocomplete="on">
+        <div class="section-label" style="margin-bottom:14px">Dados pessoais</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome completo *</label>
+            <input type="text" id="regNome" name="fullname" placeholder="Nome e sobrenome" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label>CPF *</label>
+            <input type="text" id="regCpf" name="cpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>E-mail corporativo *</label>
+          <input type="email" id="regEmail" name="email" placeholder="seu@email.com.br" autocomplete="email">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Senha *</label>
+            <input type="password" id="regSenha" name="password" placeholder="Min. 8 caracteres" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label>Confirmar senha *</label>
+            <input type="password" id="regSenha2" name="password2" placeholder="Repita a senha" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Endereço residencial completo *</label>
+          <input type="text" id="regEndereco" placeholder="Rua, número, complemento, cidade - UF">
+        </div>
+
+        <div class="section-label" style="margin: 18px 0 14px">Dados da empresa</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Razão social *</label>
+            <input type="text" id="regEmpresa" placeholder="Nome da empresa">
+          </div>
+          <div class="form-group">
+            <label>CNPJ *</label>
+            <input type="text" id="regCnpj" placeholder="00.000.000/0000-00" maxlength="18">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Cargo *</label>
+          <input type="text" id="regCargo" placeholder="Ex: Sócio, Diretor, Assessor de Investimentos">
+        </div>
+        <div class="form-group">
+          <label>Endereço da empresa *</label>
+          <input type="text" id="regEndEmpresa" placeholder="Rua, número, complemento, cidade - UF">
+        </div>
+
+        <button type="submit" class="btn-primary">Criar conta e iniciar cadastro</button>
+        </form>
+        <div class="form-link" style="margin-top:12px; font-size:11px; color:var(--gray-400)">
+          Após criar conta, você será direcionado ao cadastro regulatório conforme RCVM 50 e RCVM 30.
+        </div>
+      </div>
+
+      <!-- Demo hint -->
+      <div class="demo-hint">
+        <strong>Acesso demonstração</strong><br>
+        Explore o painel do originador sem cadastro obrigatório.
+        <button class="btn-demo" onclick="goToDashboard()">Entrar como demonstração →</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchTab(tab) {
+    const isEntrar = tab === 'entrar';
+    document.getElementById('tabEntrar').classList.toggle('active', isEntrar);
+    document.getElementById('tabCadastrar').classList.toggle('active', !isEntrar);
+    document.getElementById('formEntrar').classList.toggle('hidden', !isEntrar);
+    document.getElementById('formCadastrar').classList.toggle('hidden', isEntrar);
+    document.getElementById('googleBtnText').textContent = isEntrar ? 'Continuar com Google' : 'Cadastrar com Google';
+    document.getElementById('linkedinBtnText').textContent = isEntrar ? 'Continuar com LinkedIn' : 'Cadastrar com LinkedIn';
+  }
+
+  function socialLogin(provider) {
+    const btn = event.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin" style="margin-right:8px"></i> Conectando...`;
+    btn.disabled = true;
+    setTimeout(() => {
+      goToDashboard();
+    }, 1400);
+  }
+
+  function doLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+    let ok = true;
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      document.getElementById('loginEmail').classList.add('input-error');
+      document.getElementById('loginEmailErr').style.display = 'block';
+      ok = false;
+    } else {
+      document.getElementById('loginEmail').classList.remove('input-error');
+      document.getElementById('loginEmailErr').style.display = 'none';
+    }
+    if (!senha) {
+      document.getElementById('loginSenha').classList.add('input-error');
+      document.getElementById('loginSenhaErr').style.display = 'block';
+      ok = false;
+    } else {
+      document.getElementById('loginSenha').classList.remove('input-error');
+      document.getElementById('loginSenhaErr').style.display = 'none';
+    }
+    if (!ok) return;
+    const btn = document.querySelector('#formEntrar button[type="submit"]');
+    if (btn) { btn.classList.add('loading'); btn.textContent = 'Autenticando...'; }
+    setTimeout(() => { goToDashboard(); }, 1200);
+  }
+
+  function doRegister() {
+    const fields = ['regNome','regCpf','regEmail','regSenha','regSenha2','regEndereco','regEmpresa','regCnpj','regCargo','regEndEmpresa'];
+    let ok = true;
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || !el.value.trim()) {
+        if (el) el.classList.add('input-error');
+        ok = false;
+      } else {
+        el.classList.remove('input-error');
+      }
+    });
+    const s1 = document.getElementById('regSenha').value;
+    const s2 = document.getElementById('regSenha2').value;
+    if (s1 && s2 && s1 !== s2) {
+      document.getElementById('regSenha2').classList.add('input-error');
+      ok = false;
+    }
+    if (!ok) { alert('Preencha todos os campos obrigatórios corretamente.'); return; }
+    const btn = document.querySelector('#formCadastrar button[type="submit"]');
+    if (btn) { btn.classList.add('loading'); btn.textContent = 'Criando conta...'; }
+    setTimeout(() => { window.location.href = 'onboarding.html'; }, 1200);
+  }
+
+  function goToDashboard() {
+    window.location.href = 'dashboard.html';
+  }
+
+  // CPF/CNPJ masks
+  document.addEventListener('DOMContentLoaded', () => {
+    const cpfEl = document.getElementById('regCpf');
+    if (cpfEl) cpfEl.addEventListener('input', e => {
+      let v = e.target.value.replace(/\D/g,'').slice(0,11);
+      v = v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+      e.target.value = v;
+    });
+    const cnpjEl = document.getElementById('regCnpj');
+    if (cnpjEl) cnpjEl.addEventListener('input', e => {
+      let v = e.target.value.replace(/\D/g,'').slice(0,14);
+      v = v.replace(/(\d{2})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1/$2').replace(/(\d{4})(\d{1,2})$/,'$1-$2');
+      e.target.value = v;
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloxs IBaaS — Cadastro Regulatório</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0b1f3a;
+    --navy-mid: #132d54;
+    --blue: #1a6edb;
+    --blue-light: #4fa3ff;
+    --blue-xlight: #d6e8ff;
+    --white: #ffffff;
+    --off-white: #f7f9fc;
+    --gray-100: #f0f4f8;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-600: #64748b;
+    --gray-800: #1e293b;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --success: #059669;
+    --warning: #d97706;
+    --error: #dc2626;
+  }
+  html, body { font-family: 'Inter', sans-serif; background: var(--off-white); color: var(--text); }
+
+  .ob-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .ob-logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ob-logo img {
+    height: 28px;
+  }
+  .ob-logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 600;
+    color: var(--navy); letter-spacing: -0.3px;
+  }
+
+  .ob-header-info {
+    font-size: 12px; color: var(--text-muted);
+  }
+
+  .ob-layout {
+    display: flex;
+    min-height: calc(100vh - 65px);
+  }
+
+  /* sidebar */
+  .ob-sidebar {
+    width: 280px;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    padding: 40px 28px;
+    flex-shrink: 0;
+  }
+
+  .ob-sidebar h3 {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 24px;
+  }
+
+  .step-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    cursor: default;
+    transition: background 0.15s;
+  }
+
+  .step-item.active { background: var(--blue-xlight); }
+  .step-item.done { background: var(--gray-100); }
+
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+    flex-shrink: 0;
+    background: var(--gray-200);
+    color: var(--gray-600);
+    transition: all 0.2s;
+  }
+
+  .step-item.active .step-num {
+    background: var(--blue);
+    color: var(--white);
+  }
+
+  .step-item.done .step-num {
+    background: var(--success);
+    color: var(--white);
+  }
+
+  .step-item.done .step-num::before { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+
+  .step-label { flex: 1; }
+  .step-label strong { display: block; font-size: 13px; font-weight: 600; color: var(--navy); }
+  .step-label span { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; margin-top: 2px; display: block; }
+
+  .step-item.active .step-label strong { color: var(--blue); }
+
+  /* content */
+  .ob-content {
+    flex: 1;
+    padding: 48px 60px;
+    max-width: 820px;
+  }
+
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  .panel-header {
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-header .tag {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--blue);
+    margin-bottom: 10px;
+  }
+
+  .panel-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 600;
+    color: var(--navy); letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+
+  .panel-header p { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 560px; }
+
+  /* form grid */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .form-grid.cols-1 { grid-template-columns: 1fr; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  .form-group label {
+    font-size: 12.5px; font-weight: 500;
+    color: var(--gray-800); letter-spacing: 0.01em;
+  }
+
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-size: 13.5px; font-family: 'Inter', sans-serif;
+    color: var(--text); background: var(--white);
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(26,110,219,0.1);
+  }
+
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-group select { appearance: none; cursor: pointer; }
+
+  .section-heading {
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--blue); margin: 30px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* suitability */
+  .suitability-q { margin-bottom: 28px; }
+  .suitability-q label { font-size: 14px; font-weight: 500; color: var(--navy); margin-bottom: 12px; display: block; }
+  .radio-group { display: flex; flex-direction: column; gap: 8px; }
+  .radio-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13.5px;
+  }
+  .radio-item:hover { border-color: var(--blue-light); background: var(--blue-xlight); }
+  .radio-item input[type="radio"] { accent-color: var(--blue); }
+  .radio-item.selected { border-color: var(--blue); background: var(--blue-xlight); }
+
+  /* perfil badge */
+  .perfil-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    margin-top: 20px;
+    background: var(--blue-xlight);
+    color: var(--navy);
+    border: 1.5px solid var(--blue-light);
+  }
+
+  /* beneficiários */
+  .beneficiario-card {
+    background: var(--gray-100);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .beneficiario-card h4 { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 14px; }
+
+  /* info box */
+  .info-box {
+    background: var(--blue-xlight);
+    border: 1px solid var(--blue-light);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 13px; color: var(--navy);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .info-box strong { font-weight: 600; }
+
+  /* navigation buttons */
+  .step-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-back {
+    padding: 11px 24px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    background: var(--white);
+    color: var(--gray-600);
+    font-size: 14px; font-weight: 500; font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-back:hover { border-color: var(--navy); color: var(--navy); }
+
+  .btn-next {
+    padding: 12px 32px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 7px;
+    font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .btn-next:hover { background: var(--blue); }
+
+  /* success screen */
+  .success-screen {
+    text-align: center;
+    padding: 60px 40px;
+  }
+
+  .success-icon {
+    width: 72px; height: 72px;
+    background: var(--success);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; color: var(--white);
+    margin: 0 auto 28px;
+  }
+
+  .success-screen h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px; font-weight: 600;
+    color: var(--navy); margin-bottom: 14px;
+  }
+
+  .success-screen p {
+    font-size: 15px; color: var(--text-muted);
+    line-height: 1.7; max-width: 480px; margin: 0 auto 32px;
+  }
+
+  .checkbox-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13.5px; line-height: 1.5;
+    margin-bottom: 10px;
+    transition: all 0.15s;
+  }
+
+  .checkbox-item:hover { border-color: var(--blue-light); background: var(--blue-xlight); }
+  .checkbox-item input { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+
+  @media(max-width: 900px) {
+    .ob-sidebar { display: none; }
+    .ob-content { padding: 32px 24px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid.cols-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="ob-header">
+  <div class="ob-logo">
+    <img src="https://bloxs.com.br/_next/static/media/logotype-bloxs.24b4579c.svg" alt="Bloxs"
+      onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'">
+    <span class="ob-logo-text" style="display:none">Bloxs</span>
+  </div>
+  <div class="ob-header-info">Cadastro Regulatório — IBaaS · Portal do Originador</div>
+</header>
+
+<div class="ob-layout">
+  <!-- Sidebar -->
+  <nav class="ob-sidebar">
+    <h3>Etapas do cadastro</h3>
+    <div class="step-list" id="stepList">
+      <div class="step-item active" data-step="1">
+        <div class="step-num">1</div>
+        <div class="step-label">
+          <strong>KYC / CVM 50</strong>
+          <span>Identificação e perfil empresarial</span>
+        </div>
+      </div>
+      <div class="step-item" data-step="2">
+        <div class="step-num">2</div>
+        <div class="step-label">
+          <strong>Suitability / CVM 30</strong>
+          <span>Adequação ao perfil de investidor</span>
+        </div>
+      </div>
+      <div class="step-item" data-step="3">
+        <div class="step-num">3</div>
+        <div class="step-label">
+          <strong>Beneficiários Finais</strong>
+          <span>Estrutura societária e controle</span>
+        </div>
+      </div>
+      <div class="step-item" data-step="4">
+        <div class="step-num">4</div>
+        <div class="step-label">
+          <strong>Conclusão</strong>
+          <span>Acesso ao painel liberado</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="ob-content">
+
+    <!-- Step 1: KYC -->
+    <div class="step-panel active" id="panel1">
+      <div class="panel-header">
+        <div class="tag">Etapa 1 de 4 · RCVM 50 — KYC / KYB</div>
+        <h2>Identificação e dados da empresa</h2>
+        <p>Conformidade com a Resolução CVM 50 — prevenção à lavagem de dinheiro e cadastro regulatório completo.</p>
+      </div>
+
+      <div class="info-box">
+        <strong>Por que esses dados são obrigatórios?</strong> A Resolução CVM 50 exige que todos os participantes do mercado de capitais sejam plenamente identificados, incluindo a cadeia de controle societário e verificação de Pessoas Expostas Politicamente (PEP).
+      </div>
+
+      <div class="section-heading">Dados da pessoa jurídica</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Tipo de pessoa jurídica *</label>
+          <select><option value="">Selecione</option><option>Empresa (LTDA / S.A.)</option><option>Holding Patrimonial</option><option>Family Office</option><option>Fundo de Investimento</option><option>Outro</option></select>
+        </div>
+        <div class="form-group">
+          <label>CNPJ *</label>
+          <input type="text" placeholder="00.000.000/0000-00">
+        </div>
+        <div class="form-group full">
+          <label>Razão social *</label>
+          <input type="text" placeholder="Razão social completa conforme Receita Federal">
+        </div>
+        <div class="form-group">
+          <label>Atividade principal (CNAE) *</label>
+          <input type="text" placeholder="Código CNAE ou descrição">
+        </div>
+        <div class="form-group">
+          <label>Faturamento médio mensal (últ. 12 meses) *</label>
+          <select><option value="">Selecione a faixa</option><option>Até R$ 500 mil</option><option>R$ 500 mil – R$ 5 mi</option><option>R$ 5 mi – R$ 50 mi</option><option>Acima de R$ 50 mi</option></select>
+        </div>
+        <div class="form-group full">
+          <label>Endereço completo da sede *</label>
+          <input type="text" placeholder="Logradouro, número, complemento, cidade – UF, CEP">
+        </div>
+      </div>
+
+      <div class="section-heading">Representante legal</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nome completo *</label>
+          <input type="text" placeholder="Nome e sobrenome">
+        </div>
+        <div class="form-group">
+          <label>CPF *</label>
+          <input type="text" placeholder="000.000.000-00">
+        </div>
+        <div class="form-group">
+          <label>Cargo / Função *</label>
+          <input type="text" placeholder="Ex: Sócio-Administrador, Diretor">
+        </div>
+        <div class="form-group">
+          <label>E-mail corporativo *</label>
+          <input type="email" placeholder="cargo@empresa.com.br">
+        </div>
+      </div>
+
+      <div class="section-heading">Verificações regulatórias</div>
+      <div class="checkbox-item">
+        <input type="checkbox" id="pep">
+        <label for="pep">Algum administrador, controlador ou sócio com influência significativa é Pessoa Politicamente Exposta (PEP) nos termos do Anexo A da RCVM 50?</label>
+      </div>
+      <div class="checkbox-item">
+        <input type="checkbox" id="sancoes">
+        <label for="sancoes">Declaro que a empresa e seus representantes não constam em listas de sanções do Conselho de Segurança da ONU (CSNU) ou demais listas de restrição aplicáveis.</label>
+      </div>
+
+      <div class="step-nav">
+        <div></div>
+        <button class="btn-next" onclick="goStep(2)">Próxima etapa <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 2: Suitability -->
+    <div class="step-panel" id="panel2">
+      <div class="panel-header">
+        <div class="tag">Etapa 2 de 4 · RCVM 30 — Suitability</div>
+        <h2>Adequação ao perfil de investidor</h2>
+        <p>As respostas a seguir determinam seu perfil de risco e garantem a adequação dos produtos disponibilizados à sua realidade financeira e experiência de mercado.</p>
+      </div>
+
+      <div class="suitability-q">
+        <label>1. Qual é o horizonte temporal dos seus investimentos?</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="q1" value="1"> Curto prazo (até 1 ano)</label>
+          <label class="radio-item"><input type="radio" name="q1" value="2"> Médio prazo (1 a 3 anos)</label>
+          <label class="radio-item"><input type="radio" name="q1" value="3"> Longo prazo (acima de 3 anos)</label>
+        </div>
+      </div>
+
+      <div class="suitability-q">
+        <label>2. Qual é a sua tolerância ao risco?</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="q2" value="1"> Conservador — priorizo a preservação do capital</label>
+          <label class="radio-item"><input type="radio" name="q2" value="2"> Moderado — aceito algum risco por melhores retornos</label>
+          <label class="radio-item"><input type="radio" name="q2" value="3"> Arrojado — aceito alta volatilidade buscando retornos elevados</label>
+        </div>
+      </div>
+
+      <div class="suitability-q">
+        <label>3. Qual é o seu patrimônio líquido estimado?</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="q3" value="1"> Até R$ 1 milhão</label>
+          <label class="radio-item"><input type="radio" name="q3" value="2"> R$ 1 mi a R$ 10 mi</label>
+          <label class="radio-item"><input type="radio" name="q3" value="3"> Acima de R$ 10 mi</label>
+        </div>
+      </div>
+
+      <div class="suitability-q">
+        <label>4. Com quais tipos de ativos você já operou?</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="q4" value="1"> Apenas renda fixa bancária (CDB, LCI, LCA)</label>
+          <label class="radio-item"><input type="radio" name="q4" value="2"> Fundos de investimento e títulos privados (CRI, CRA, Debêntures)</label>
+          <label class="radio-item"><input type="radio" name="q4" value="3"> Operações estruturadas, FIDCs, equity e derivativos</label>
+        </div>
+      </div>
+
+      <div class="suitability-q">
+        <label>5. Qual é a sua formação e experiência profissional no mercado financeiro?</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="q5" value="1"> Sem experiência formal no setor financeiro</label>
+          <label class="radio-item"><input type="radio" name="q5" value="2"> Formação ou atuação profissional correlata (economia, contabilidade, direito)</label>
+          <label class="radio-item"><input type="radio" name="q5" value="3"> Experiência direta no mercado de capitais (banco, gestora, distribuidora)</label>
+        </div>
+      </div>
+
+      <div id="perfilResult" class="perfil-badge" style="display:none">
+        <i class="fas fa-user-check"></i>
+        <span id="perfilText">Perfil identificado: —</span>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn-back" onclick="goStep(1)"><i class="fas fa-arrow-left"></i> Voltar</button>
+        <button class="btn-next" onclick="calcSuitability()">Próxima etapa <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 3: Beneficiários Finais -->
+    <div class="step-panel" id="panel3">
+      <div class="panel-header">
+        <div class="tag">Etapa 3 de 4 · RCVM 50 — Art. 13</div>
+        <h2>Beneficiários finais e estrutura societária</h2>
+        <p>Identifique os sócios ou acionistas com participação direta ou indireta superior a 25% do capital social, conforme exigência da RCVM 50, Art. 13.</p>
+      </div>
+
+      <div class="info-box">
+        <strong>Definição de Beneficiário Final:</strong> Pessoa natural que detém, direta ou indiretamente, mais de 25% do capital social da empresa, ou que exerce influência significativa sobre as decisões da organização. O processo deve alcançar a pessoa natural ao final da cadeia de controle.
+      </div>
+
+      <div id="beneficiarios">
+        <div class="beneficiario-card">
+          <h4>Beneficiário Final #1</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nome completo *</label>
+              <input type="text" placeholder="Nome completo">
+            </div>
+            <div class="form-group">
+              <label>CPF *</label>
+              <input type="text" placeholder="000.000.000-00">
+            </div>
+            <div class="form-group">
+              <label>% de participação *</label>
+              <input type="text" placeholder="Ex: 51%">
+            </div>
+            <div class="form-group">
+              <label>Vínculo societário *</label>
+              <select><option value="">Selecione</option><option>Sócio / Acionista</option><option>Controlador indireto</option><option>Representante legal</option><option>Influência significativa</option></select>
+            </div>
+            <div class="form-group full">
+              <label>É Pessoa Politicamente Exposta (PEP)?</label>
+              <select><option>Não</option><option>Sim</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-next" style="background: var(--white); color: var(--navy); border: 1.5px solid var(--border); padding: 10px 20px; font-size: 13px; margin-bottom: 28px;" onclick="addBeneficiario()">
+        <i class="fas fa-plus" style="margin-right:6px"></i> Adicionar beneficiário
+      </button>
+
+      <div class="checkbox-item">
+        <input type="checkbox" id="termoVerdade">
+        <label for="termoVerdade">Declaro que as informações prestadas são verídicas e me responsabilizo por sua atualização em prazo não superior a 5 (cinco) anos, conforme art. 4º da RCVM 50.</label>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn-back" onclick="goStep(2)"><i class="fas fa-arrow-left"></i> Voltar</button>
+        <button class="btn-next" onclick="goStep(4)">Finalizar cadastro <i class="fas fa-check"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 4: Success -->
+    <div class="step-panel" id="panel4">
+      <div class="success-screen">
+        <div class="success-icon"><i class="fas fa-check"></i></div>
+        <h2>Cadastro concluído com sucesso</h2>
+        <p>Seu perfil regulatório foi registrado conforme as Resoluções CVM 50 e 30. Agora você tem acesso ao Painel do Originador Bloxs IBaaS.</p>
+        <button class="btn-next" style="margin: 0 auto; display: inline-flex;" onclick="window.location.href='dashboard.html'">
+          Acessar o Painel <i class="fas fa-arrow-right"></i>
+        </button>
+        <div style="margin-top: 24px; font-size: 11.5px; color: var(--text-muted); line-height: 1.7; max-width: 480px; margin-left: auto; margin-right: auto;">
+          Seus dados cadastrais foram protocolados e serão analisados pela equipe de Compliance da Bloxs. Em caso de pendências, você será notificado por e-mail. O acesso ao painel é imediato, mas operações estão sujeitas à aprovação final do cadastro.
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  let currentStep = 1;
+
+  function goStep(n) {
+    document.getElementById(`panel${currentStep}`).classList.remove('active');
+    document.getElementById(`panel${n}`).classList.add('active');
+
+    // update sidebar
+    document.querySelectorAll('.step-item').forEach(el => {
+      const s = parseInt(el.dataset.step);
+      el.classList.remove('active','done');
+      if (s === n) el.classList.add('active');
+      else if (s < n) el.classList.add('done');
+    });
+
+    currentStep = n;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function calcSuitability() {
+    const vals = [1,2,3,4,5].map(i => {
+      const r = document.querySelector(`input[name="q${i}"]:checked`);
+      return r ? parseInt(r.value) : 0;
+    });
+    const total = vals.reduce((a,b) => a+b, 0);
+    let perfil;
+    if (total <= 7) perfil = 'Conservador';
+    else if (total <= 11) perfil = 'Moderado';
+    else perfil = 'Arrojado';
+
+    const el = document.getElementById('perfilResult');
+    document.getElementById('perfilText').textContent = `Perfil identificado: ${perfil}`;
+    el.style.display = 'inline-flex';
+
+    setTimeout(() => goStep(3), 800);
+  }
+
+  let bCount = 1;
+  function addBeneficiario() {
+    bCount++;
+    const div = document.createElement('div');
+    div.className = 'beneficiario-card';
+    div.innerHTML = `
+      <h4>Beneficiário Final #${bCount}</h4>
+      <div class="form-grid">
+        <div class="form-group"><label>Nome completo *</label><input type="text" placeholder="Nome completo"></div>
+        <div class="form-group"><label>CPF *</label><input type="text" placeholder="000.000.000-00"></div>
+        <div class="form-group"><label>% de participação *</label><input type="text" placeholder="Ex: 25%"></div>
+        <div class="form-group"><label>Vínculo societário *</label><select><option>Sócio / Acionista</option><option>Controlador indireto</option><option>Influência significativa</option></select></div>
+        <div class="form-group full"><label>É PEP?</label><select><option>Não</option><option>Sim</option></select></div>
+      </div>
+    `;
+    document.getElementById('beneficiarios').appendChild(div);
+  }
+</script>
+</body>
+</html>

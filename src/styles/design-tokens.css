@@ -1,0 +1,173 @@
+/**
+ * Bloxs IBaaS Design System
+ * Design Tokens - Core design values
+ */
+
+:root {
+  /* ═══════════════════════════════════════════════════════════
+     COLORS - Brand & Semantic
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Brand Colors */
+  --bloxs-navy: #0b1f3a;
+  --bloxs-navy-mid: #132d54;
+  --bloxs-navy-light: #1e3a5f;
+  --bloxs-blue: #1a6edb;
+  --bloxs-blue-mid: #2b7de9;
+  --bloxs-blue-light: #4fa3ff;
+  --bloxs-blue-xlight: #d6e8ff;
+  --bloxs-blue-xxlight: #eef5ff;
+
+  /* Neutral Colors */
+  --bloxs-white: #ffffff;
+  --bloxs-off-white: #f7f9fc;
+  --bloxs-gray-50: #fafafa;
+  --bloxs-gray-100: #f0f4f8;
+  --bloxs-gray-200: #e2e8f0;
+  --bloxs-gray-300: #cbd5e1;
+  --bloxs-gray-400: #94a3b8;
+  --bloxs-gray-500: #64748b;
+  --bloxs-gray-600: #475569;
+  --bloxs-gray-800: #1e293b;
+
+  /* Semantic Colors */
+  --bloxs-text: #0f172a;
+  --bloxs-text-muted: #64748b;
+  --bloxs-border: #e2e8f0;
+  --bloxs-success: #059669;
+  --bloxs-success-light: #d1fae5;
+  --bloxs-warning: #d97706;
+  --bloxs-warning-light: #fef3c7;
+  --bloxs-error: #dc2626;
+  --bloxs-error-light: #fee2e2;
+
+  /* ═══════════════════════════════════════════════════════════
+     TYPOGRAPHY
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Font Families */
+  --bloxs-font-display: 'Playfair Display', Georgia, serif;
+  --bloxs-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bloxs-font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+
+  /* Font Sizes */
+  --bloxs-text-xs: 11px;
+  --bloxs-text-sm: 12.5px;
+  --bloxs-text-base: 13.5px;
+  --bloxs-text-md: 14px;
+  --bloxs-text-lg: 15px;
+  --bloxs-text-xl: 19px;
+  --bloxs-text-2xl: 22px;
+  --bloxs-text-3xl: 26px;
+  --bloxs-text-4xl: 28px;
+  --bloxs-text-5xl: 36px;
+
+  /* Font Weights */
+  --bloxs-font-light: 300;
+  --bloxs-font-normal: 400;
+  --bloxs-font-medium: 500;
+  --bloxs-font-semibold: 600;
+  --bloxs-font-bold: 700;
+
+  /* Line Heights */
+  --bloxs-leading-tight: 1.25;
+  --bloxs-leading-snug: 1.4;
+  --bloxs-leading-normal: 1.5;
+  --bloxs-leading-relaxed: 1.6;
+  --bloxs-leading-loose: 1.7;
+
+  /* Letter Spacing */
+  --bloxs-tracking-tight: -0.5px;
+  --bloxs-tracking-snug: -0.3px;
+  --bloxs-tracking-normal: 0;
+  --bloxs-tracking-wide: 0.01em;
+  --bloxs-tracking-wider: 0.08em;
+  --bloxs-tracking-widest: 0.12em;
+
+  /* ═══════════════════════════════════════════════════════════
+     SPACING
+     ═══════════════════════════════════════════════════════════ */
+
+  --bloxs-space-1: 4px;
+  --bloxs-space-2: 8px;
+  --bloxs-space-3: 12px;
+  --bloxs-space-4: 16px;
+  --bloxs-space-5: 20px;
+  --bloxs-space-6: 24px;
+  --bloxs-space-7: 28px;
+  --bloxs-space-8: 32px;
+  --bloxs-space-10: 40px;
+  --bloxs-space-12: 48px;
+  --bloxs-space-14: 56px;
+  --bloxs-space-16: 64px;
+
+  /* ═══════════════════════════════════════════════════════════
+     BORDERS & RADIUS
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Border Widths */
+  --bloxs-border-thin: 1px;
+  --bloxs-border-medium: 1.5px;
+  --bloxs-border-thick: 2px;
+  --bloxs-border-heavy: 3px;
+
+  /* Border Radius */
+  --bloxs-radius-sm: 4px;
+  --bloxs-radius-md: 6px;
+  --bloxs-radius-base: 7px;
+  --bloxs-radius-lg: 8px;
+  --bloxs-radius-xl: 10px;
+  --bloxs-radius-2xl: 12px;
+  --bloxs-radius-full: 9999px;
+
+  /* ═══════════════════════════════════════════════════════════
+     SHADOWS
+     ═══════════════════════════════════════════════════════════ */
+
+  --bloxs-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --bloxs-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.1);
+  --bloxs-shadow-md: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --bloxs-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --bloxs-shadow-xl: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --bloxs-shadow-focus: 0 0 0 3px rgba(26, 110, 219, 0.1);
+
+  /* ═══════════════════════════════════════════════════════════
+     TRANSITIONS
+     ═══════════════════════════════════════════════════════════ */
+
+  --bloxs-transition-fast: 0.15s;
+  --bloxs-transition-base: 0.18s;
+  --bloxs-transition-slow: 0.2s;
+  --bloxs-transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ═══════════════════════════════════════════════════════════
+     Z-INDEX LAYERS
+     ═══════════════════════════════════════════════════════════ */
+
+  --bloxs-z-base: 1;
+  --bloxs-z-dropdown: 50;
+  --bloxs-z-sticky: 100;
+  --bloxs-z-sidebar: 100;
+  --bloxs-z-header: 200;
+  --bloxs-z-overlay: 300;
+  --bloxs-z-modal: 400;
+  --bloxs-z-tooltip: 500;
+
+  /* ═══════════════════════════════════════════════════════════
+     COMPONENT SPECIFIC
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Layout */
+  --bloxs-sidebar-width: 240px;
+  --bloxs-topbar-height: 60px;
+
+  /* Input */
+  --bloxs-input-height: 40px;
+  --bloxs-input-padding-x: 14px;
+  --bloxs-input-padding-y: 11px;
+
+  /* Button */
+  --bloxs-button-padding-sm: 7px 14px;
+  --bloxs-button-padding-md: 9px 18px;
+  --bloxs-button-padding-lg: 13px 28px;
+}
