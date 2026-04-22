@@ -1,0 +1,269 @@
+/**
+ * Bloxs IBaaS Custom Styles
+ * Estilos globais e utilitários customizados
+ */
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+body {
+  font-family: var(--bloxs-font-body);
+  background-color: var(--bloxs-off-white);
+  color: var(--bloxs-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Remover margem padrão de elementos */
+h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLLBAR CUSTOMIZATION
+   ═══════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bloxs-gray-200);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bloxs-gray-300);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bloxs-gray-200) transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Text utilities */
+.text-display {
+  font-family: var(--bloxs-font-display);
+}
+
+.text-body {
+  font-family: var(--bloxs-font-body);
+}
+
+.text-mono {
+  font-family: var(--bloxs-font-mono);
+}
+
+/* Container utilities */
+.container-sm {
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.container-md {
+  max-width: 768px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.container-lg {
+  max-width: 1024px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.container-xl {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOCUS STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Remover outline padrão e adicionar custom */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--bloxs-blue);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SELECTION
+   ═══════════════════════════════════════════════════════════ */
+
+::selection {
+  background-color: var(--bloxs-blue-xlight);
+  color: var(--bloxs-navy);
+}
+
+::-moz-selection {
+  background-color: var(--bloxs-blue-xlight);
+  color: var(--bloxs-navy);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animation utility classes */
+.animate-fadeIn {
+  animation: fadeIn var(--bloxs-transition-base) var(--bloxs-transition-ease);
+}
+
+.animate-slideUp {
+  animation: slideUp var(--bloxs-transition-base) var(--bloxs-transition-ease);
+}
+
+.animate-slideDown {
+  animation: slideDown var(--bloxs-transition-base) var(--bloxs-transition-ease);
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+@media print {
+  /* Ocultar elementos não necessários na impressão */
+  nav,
+  .sidebar,
+  .topbar,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remover backgrounds e sombras */
+  * {
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  /* Garantir que o conteúdo caiba na página */
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Quebras de página */
+  .page-break {
+    page-break-after: always;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════ */
+
+/* Visually hidden but accessible to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--bloxs-navy);
+  color: var(--bloxs-white);
+  padding: var(--bloxs-space-4);
+  text-decoration: none;
+  z-index: var(--bloxs-z-modal);
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE SUPPORT (preparação futura)
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-color-scheme: dark) {
+  /* Dark mode será implementado em versões futuras */
+  /* Por enquanto, mantemos o tema light */
+}
