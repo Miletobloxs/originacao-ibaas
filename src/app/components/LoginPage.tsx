@@ -4,6 +4,10 @@ import { useNavigate } from 'react-router-dom';
 export default function LoginPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'entrar' | 'cadastrar'>('entrar');
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotEnviado, setForgotEnviado] = useState(false);
   const [formData, setFormData] = useState({
     loginEmail: '',
     loginSenha: '',
@@ -157,8 +161,80 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-[#e2e8f0]"></div>
           </div>
 
+          {/* FORGOT PASSWORD */}
+          {activeTab === 'entrar' && showForgot && (
+            <div>
+              {forgotEnviado ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 rounded-full bg-[#d1fae5] flex items-center justify-center mx-auto mb-4">
+                    <i className="fas fa-envelope-open-text text-[#059669] text-xl"></i>
+                  </div>
+                  <h3 className="font-['Playfair_Display'] text-[20px] font-semibold text-[#0b1f3a] mb-2">
+                    Link enviado!
+                  </h3>
+                  <p className="text-[13px] text-[#64748b] leading-relaxed mb-1">
+                    Enviamos um link de recuperação para
+                  </p>
+                  <p className="text-[13px] font-semibold text-[#0b1f3a] mb-6">{forgotEmail}</p>
+                  <p className="text-[11.5px] text-[#94a3b8] mb-6">
+                    Verifique sua caixa de entrada e spam. O link expira em 30 minutos.
+                  </p>
+                  <button
+                    onClick={() => { setShowForgot(false); setForgotEnviado(false); setForgotEmail(''); }}
+                    className="text-[13px] text-[#1a6edb] font-semibold hover:underline"
+                  >
+                    ← Voltar ao login
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <button
+                    onClick={() => setShowForgot(false)}
+                    className="flex items-center gap-1.5 text-[12.5px] text-[#64748b] hover:text-[#0b1f3a] mb-5 transition-colors"
+                  >
+                    <i className="fas fa-arrow-left text-[11px]"></i>
+                    Voltar ao login
+                  </button>
+                  <h3 className="font-['Playfair_Display'] text-[20px] font-semibold text-[#0b1f3a] mb-1.5">
+                    Recuperar acesso
+                  </h3>
+                  <p className="text-[13px] text-[#64748b] mb-6 leading-relaxed">
+                    Informe o e-mail cadastrado e enviaremos um link para redefinir sua senha.
+                  </p>
+                  <div className="mb-5">
+                    <label className="block text-[12.5px] font-medium text-[#1e293b] mb-1.5">
+                      E-mail corporativo
+                    </label>
+                    <input
+                      type="email"
+                      value={forgotEmail}
+                      onChange={e => setForgotEmail(e.target.value)}
+                      placeholder="seu@email.com.br"
+                      className="w-full py-[11px] px-3.5 border-[1.5px] border-[#e2e8f0] rounded-[7px] text-sm outline-none transition-all focus:border-[#1a6edb] focus:shadow-[0_0_0_3px_rgba(26,110,219,0.1)]"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!forgotEmail) return;
+                      setForgotLoading(true);
+                      setTimeout(() => { setForgotLoading(false); setForgotEnviado(true); }, 1400);
+                    }}
+                    disabled={!forgotEmail || forgotLoading}
+                    className="w-full py-[13px] bg-[#0b1f3a] text-white rounded-lg text-[14px] font-semibold transition-all hover:bg-[#1a6edb] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {forgotLoading ? (
+                      <><i className="fas fa-spinner fa-spin text-[13px]"></i> Enviando...</>
+                    ) : (
+                      <><i className="fas fa-paper-plane text-[13px]"></i> Enviar link de recuperação</>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* LOGIN FORM */}
-          {activeTab === 'entrar' && (
+          {activeTab === 'entrar' && !showForgot && (
             <form onSubmit={handleLogin}>
               <div className="mb-4">
                 <label className="block text-[12.5px] font-medium text-[#1e293b] mb-1.5">
@@ -189,9 +265,13 @@ export default function LoginPage() {
                 Acessar o portal
               </button>
               <div className="text-center text-[12.5px] text-[#64748b] mt-4.5">
-                <a href="#" className="text-[#1a6edb] font-medium hover:underline">
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(true)}
+                  className="text-[#1a6edb] font-medium hover:underline"
+                >
                   Esqueci minha senha
-                </a>
+                </button>
               </div>
             </form>
           )}
