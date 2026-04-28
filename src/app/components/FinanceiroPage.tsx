@@ -61,9 +61,12 @@ const maskNFe = (v: string) =>
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
-interface Props { nfPreSelected?: { operacaoValue: string; valor: number } | null }
+interface Props {
+  nfPreSelected?: { operacaoValue: string; valor: number } | null;
+  onNFSubmit?: () => void;
+}
 
-export default function FinanceiroPage({ nfPreSelected }: Props) {
+export default function FinanceiroPage({ nfPreSelected, onNFSubmit }: Props) {
   const [form, setForm] = useState({
     operacao: nfPreSelected?.operacaoValue ?? '',
     cnpj: '',
@@ -101,6 +104,7 @@ export default function FinanceiroPage({ nfPreSelected }: Props) {
       setEnviado(true);
       setForm({ operacao: '', cnpj: '', valorNF: '', numeroNF: '', chaveNFe: '' });
       setErrors({});
+      onNFSubmit?.();
     }, 1200);
   };
 
@@ -340,7 +344,7 @@ export default function FinanceiroPage({ nfPreSelected }: Props) {
                   { label: 'Banco',   value: 'Itaú Unibanco (341)'       },
                   { label: 'Agência', value: '0001'                      },
                   { label: 'Conta',   value: '12345-6 — Corrente'        },
-                  { label: 'Titular', value: 'Roberto Alves Assessoria'  },
+                  { label: 'Titular', value: 'Rafael Andrade Assessoria'  },
                 ].map((item, i) => (
                   <div key={i} className="flex items-baseline gap-2">
                     <span className="text-[11px] font-semibold text-[var(--bloxs-gray-400)] w-[68px] flex-shrink-0">
@@ -361,7 +365,7 @@ export default function FinanceiroPage({ nfPreSelected }: Props) {
               <div className="flex flex-col gap-2.5">
                 {[
                   { label: 'CNPJ',          value: '12.345.678/0001-90'         },
-                  { label: 'Razão social',   value: 'Roberto Alves Assessoria Ltda' },
+                  { label: 'Razão social',   value: 'Rafael Andrade Assessoria Ltda' },
                   { label: 'Regime',         value: 'Simples Nacional'           },
                   { label: 'CNAE',           value: '6619-3/99 — Intermediação'  },
                 ].map((item, i) => (

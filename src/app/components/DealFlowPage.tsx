@@ -1,6 +1,70 @@
 import { useState } from 'react';
 
 export type Stage = 'originacao' | 'analise' | 'diligencia' | 'comite' | 'estruturacao' | 'concluido';
+
+interface Criterion {
+  id: string;
+  text: string;
+  owner: 'bloxs' | 'originador';
+}
+
+const STAGE_CRITERIA: Partial<Record<Stage, Criterion[]>> = {
+  originacao: [
+    { id: 'o1', text: 'DRE e Balanço dos últimos 2 exercícios enviados',  owner: 'originador' },
+    { id: 'o2', text: 'Garantia com lastro documental anexado',            owner: 'originador' },
+    { id: 'o3', text: 'CNPJ sem pendências ativas (Receita Federal)',      owner: 'bloxs'      },
+  ],
+  analise: [
+    { id: 'a1', text: 'Nota de crédito preliminar emitida', owner: 'bloxs' },
+    { id: 'a2', text: 'Checklist de PLD/FT completo',        owner: 'bloxs' },
+  ],
+  diligencia: [
+    { id: 'd1', text: 'Laudo de garantia revisado e aprovado',   owner: 'bloxs'      },
+    { id: 'd2', text: 'Declaração de beneficiário final assinada', owner: 'originador' },
+  ],
+  comite: [
+    { id: 'c1', text: 'Ata de aprovação do comitê de crédito', owner: 'bloxs'      },
+    { id: 'c2', text: 'Contrato de mandato assinado',           owner: 'originador' },
+  ],
+  estruturacao: [
+    { id: 'e1', text: 'Escritura/CCB minutada e aprovada pelo jurídico', owner: 'bloxs'      },
+    { id: 'e2', text: 'Assinatura eletrônica de todas as partes',         owner: 'originador' },
+  ],
+};
+
+interface Pendency {
+  id: string;
+  text: string;
+  prazo: string;
+  owner: 'bloxs' | 'originador';
+}
+
+const STAGE_PENDENCIES: Partial<Record<Stage, Pendency[]>> = {
+  originacao: [
+    { id: 'p1', text: 'Enviar DRE e Balanço dos últimos 2 exercícios fiscais',    prazo: '08/05/2026', owner: 'originador' },
+    { id: 'p2', text: 'Pendência no CNPJ em verificação pela Receita Federal',    prazo: '—',          owner: 'bloxs'      },
+  ],
+  analise: [
+    { id: 'p3', text: 'Laudo de avaliação de garantia vencido — nova versão necessária', prazo: '30/04/2026', owner: 'originador' },
+  ],
+  diligencia: [
+    { id: 'p4', text: 'Declaração de beneficiário final pendente de assinatura pelo controlador', prazo: '05/05/2026', owner: 'originador' },
+    { id: 'p5', text: 'CND federal aguardando emissão pela Receita Federal',                      prazo: '—',          owner: 'bloxs'      },
+  ],
+  comite: [
+    { id: 'p6', text: 'Carta de crédito do emissor pendente de envio ao estruturador', prazo: '10/05/2026', owner: 'originador' },
+  ],
+  estruturacao: [
+    { id: 'p7', text: 'Revisão final da escritura pelo assessor jurídico do emissor', prazo: '15/05/2026', owner: 'originador' },
+  ],
+};
+
+const DEAL_SPREADS: Record<string, number> = {
+  'CRI': 3.5, 'CRA': 4.0, 'FIDC': 5.0, 'Debênture': 2.5,
+  'CR': 3.0, 'Nota Comercial': 2.0, 'A definir': 3.0,
+};
+const SIM_BASE_RATES: Record<string, number> = { CDI: 10.75, IPCA: 5.0, 'Poupança': 7.5 };
+const IR_EXEMPT_INSTRUMENTS = new Set(['CRI', 'CRA']);
 export type Instrument = 'CRI' | 'CRA' | 'CR' | 'FIDC' | 'Debênture' | 'Nota Comercial' | 'A definir';
 
 export interface DealEvent {
@@ -439,16 +503,44 @@ function DealPanel({ deal, onClose }: { deal: Deal; onClose: () => void }) {
   const stageLabel = col?.label ?? deal.stage;
   const stageBg = col?.headerBg ?? '#475569';
 
+  const criteria   = STAGE_CRITERIA[deal.stage]   ?? [];
+  const pendencies = STAGE_PENDENCIES[deal.stage]  ?? [];
+
+  const [checkedItems,  setCheckedItems]  = useState<string[]>([]);
+  const [resolvedIds,   setResolvedIds]   = useState<string[]>([]);
+  const [showSim,       setShowSim]       = useState(false);
+  const [sim, setSim] = useState({
+    investimento: '1000000',
+    prazo: '24',
+    ir: 'auto',
+    benchmark: 'CDI' as 'CDI' | 'IPCA' | 'Poupança',
+  });
+
+  const isExempt   = IR_EXEMPT_INSTRUMENTS.has(deal.instrument);
+  const spread     = DEAL_SPREADS[deal.instrument] ?? 3.0;
+  const grossRate  = SIM_BASE_RATES[sim.benchmark] + spread;
+  const prazoMeses = Math.max(1, Number(sim.prazo) || 24);
+  const prazoAnos  = prazoMeses / 12;
+  const irRate     = isExempt ? 0
+    : sim.ir === 'auto'
+      ? (prazoMeses <= 6 ? 22.5 : prazoMeses <= 12 ? 20 : prazoMeses <= 24 ? 17.5 : 15)
+      : Number(sim.ir);
+  const netRate    = grossRate * (1 - irRate / 100);
+  const investRaw  = Number(sim.investimento.replace(/\D/g, '')) || 0;
+  const grossVal   = investRaw * Math.pow(1 + grossRate / 100, prazoAnos);
+  const netVal     = investRaw + (grossVal - investRaw) * (1 - irRate / 100);
+  const benchVal   = investRaw * Math.pow(1 + SIM_BASE_RATES[sim.benchmark] / 100, prazoAnos);
+  const spreadPP   = grossRate - SIM_BASE_RATES[sim.benchmark];
+  const fmtBRL = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmtPct = (v: number) => v.toFixed(2) + '% a.a.';
+
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/25 z-[300]"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/25 z-[300]" onClick={onClose} />
 
       {/* Panel */}
-      <div className="fixed top-0 right-0 bottom-0 w-[440px] bg-white z-[400] shadow-[-6px_0_40px_rgba(0,0,0,0.10)] flex flex-col">
+      <div className="fixed top-0 right-0 bottom-0 w-[460px] bg-white z-[400] shadow-[-6px_0_40px_rgba(0,0,0,0.10)] flex flex-col">
         {/* Header */}
         <div className="px-6 pt-6 pb-5 border-b border-[#e2e8f0] flex items-start justify-between gap-3">
           <div>
@@ -469,27 +561,134 @@ function DealPanel({ deal, onClose }: { deal: Deal; onClose: () => void }) {
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
           {/* Stage + instrument */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className="text-[11.5px] font-semibold px-3 py-1 rounded-full text-white"
-              style={{ backgroundColor: stageBg }}
-            >
+            <span className="text-[11.5px] font-semibold px-3 py-1 rounded-full text-white" style={{ backgroundColor: stageBg }}>
               {stageLabel}
             </span>
-            <span
-              className="text-[11.5px] font-semibold px-3 py-1 rounded-full"
-              style={{ backgroundColor: instrStyle.bg, color: instrStyle.text }}
-            >
+            <span className="text-[11.5px] font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: instrStyle.bg, color: instrStyle.text }}>
               {deal.instrument}
             </span>
           </div>
+
+          {/* ── 4.2 Checklist de critérios de avanço ─────────────────────── */}
+          {criteria.length > 0 && deal.stage !== 'concluido' && (
+            <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] p-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8] mb-3 flex items-center gap-1.5">
+                <i className="fas fa-tasks text-[10px]"></i>
+                Critérios para avançar de etapa
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {criteria.map(c => {
+                  const checked = checkedItems.includes(c.id);
+                  const isBloxs = c.owner === 'bloxs';
+                  return (
+                    <div key={c.id} className="flex items-start gap-2.5">
+                      {isBloxs ? (
+                        <div className={`w-4 h-4 rounded flex-shrink-0 mt-0.5 flex items-center justify-center ${checked ? 'bg-[#1a6edb]' : 'bg-[#e2e8f0]'}`}>
+                          {checked
+                            ? <i className="fas fa-check text-white text-[7px]"></i>
+                            : <i className="fas fa-lock text-[#94a3b8] text-[7px]"></i>
+                          }
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setCheckedItems(prev =>
+                            prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                          )}
+                          className={`w-4 h-4 rounded flex-shrink-0 mt-0.5 border-2 flex items-center justify-center transition-all ${
+                            checked ? 'bg-[#059669] border-[#059669]' : 'border-[#d1d5db] hover:border-[#059669]'
+                          }`}
+                        >
+                          {checked && <i className="fas fa-check text-white text-[7px]"></i>}
+                        </button>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-[12px] leading-relaxed ${checked ? 'line-through text-[#94a3b8]' : 'text-[#475569]'}`}>
+                          {c.text}
+                        </span>
+                        <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                          isBloxs ? 'bg-[#eff6ff] text-[#1a6edb]' : 'bg-[#f0fdf4] text-[#059669]'
+                        }`}>
+                          {isBloxs ? 'Bloxs' : 'Você'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-3 pt-3 border-t border-[#e2e8f0]">
+                <div className="flex justify-between text-[10.5px] text-[#94a3b8] mb-1.5">
+                  <span>{checkedItems.length}/{criteria.length} critérios atendidos</span>
+                  <span>{Math.round((checkedItems.length / criteria.length) * 100)}%</span>
+                </div>
+                <div className="h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#1a6edb] rounded-full transition-all duration-300"
+                    style={{ width: `${(checkedItems.length / criteria.length) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── 4.3 Pendências da Bloxs ───────────────────────────────────── */}
+          {pendencies.length > 0 && (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8] mb-3 flex items-center gap-1.5">
+                <i className="fas fa-exclamation-triangle text-[#d97706] text-[10px]"></i>
+                Pendências
+              </div>
+              <div className="flex flex-col gap-2">
+                {pendencies.map(p => {
+                  const resolved = resolvedIds.includes(p.id);
+                  return (
+                    <div key={p.id} className={`flex items-start gap-3 p-3 rounded-[8px] border transition-all ${
+                      resolved
+                        ? 'border-[#bbf7d0] bg-[#f0fdf4]'
+                        : p.owner === 'originador'
+                        ? 'border-[#fde68a] bg-[#fffbeb]'
+                        : 'border-[#bfdbfe] bg-[#eff6ff]'
+                    }`}>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[12px] leading-relaxed ${resolved ? 'line-through text-[#94a3b8]' : 'text-[#475569]'}`}>
+                          {p.text}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          {p.prazo !== '—' && (
+                            <span className="text-[10px] text-[#94a3b8]">
+                              <i className="fas fa-calendar text-[9px] mr-1"></i>Prazo: {p.prazo}
+                            </span>
+                          )}
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                            p.owner === 'bloxs' ? 'bg-[#eff6ff] text-[#1a6edb]' : 'bg-[#fef3c7] text-[#d97706]'
+                          }`}>
+                            {p.owner === 'bloxs' ? 'Bloxs' : 'Você'}
+                          </span>
+                        </div>
+                      </div>
+                      {p.owner === 'originador' && !resolved && (
+                        <button
+                          onClick={() => setResolvedIds(prev => [...prev, p.id])}
+                          className="flex-shrink-0 text-[10.5px] font-semibold text-[#059669] bg-[#f0fdf4] border border-[#bbf7d0] px-2.5 py-1 rounded-full hover:bg-[#dcfce7] transition-all whitespace-nowrap"
+                        >
+                          Resolver
+                        </button>
+                      )}
+                      {resolved && <i className="fas fa-check-circle text-[#059669] text-[14px] flex-shrink-0 mt-0.5"></i>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Info grid */}
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { label: 'Volume', value: `R$ ${deal.value}M` },
-              { label: 'Localização', value: deal.location },
+              { label: 'Localização', value: deal.location || '—' },
               { label: 'Setor', value: deal.sector },
               { label: 'Responsável', value: deal.responsible },
               { label: 'Originado em', value: deal.submittedAt },
@@ -527,18 +726,125 @@ function DealPanel({ deal, onClose }: { deal: Deal; onClose: () => void }) {
                       style={{ borderColor: i === 0 ? '#1a6edb' : '#cbd5e1' }}
                     ></div>
                     <div>
-                      <div className="text-[12.5px] font-medium text-[#0b1f3a] leading-snug">
-                        {ev.event}
-                      </div>
-                      <div className="text-[11px] text-[#94a3b8] mt-0.5">
-                        {ev.date} · {ev.author}
-                      </div>
+                      <div className="text-[12.5px] font-medium text-[#0b1f3a] leading-snug">{ev.event}</div>
+                      <div className="text-[11px] text-[#94a3b8] mt-0.5">{ev.date} · {ev.author}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
+
+          {/* ── 6.2 Simulador de Retorno ─────────────────────────────────── */}
+          <div className="border-t border-[#e2e8f0] pt-4">
+            <button
+              onClick={() => setShowSim(v => !v)}
+              className="w-full flex items-center justify-between py-1 text-left"
+            >
+              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8] flex items-center gap-1.5">
+                <i className="fas fa-calculator text-[10px]"></i>
+                Simulador de Retorno para Investidor
+              </div>
+              <i className={`fas fa-chevron-${showSim ? 'up' : 'down'} text-[10px] text-[#94a3b8]`}></i>
+            </button>
+
+            {showSim && (
+              <div className="mt-4 space-y-4">
+                {isExempt && (
+                  <div className="flex items-center gap-2 bg-[#f0fdf4] border border-[#bbf7d0] rounded-[8px] px-3 py-2">
+                    <i className="fas fa-leaf text-[#059669] text-[11px]"></i>
+                    <span className="text-[11.5px] font-semibold text-[#059669]">
+                      Isento de IR para Pessoa Física — {deal.instrument} (Lei 12.431)
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8] block mb-1.5">Valor investido</label>
+                    <input
+                      type="text"
+                      value={`R$ ${Number(sim.investimento || 0).toLocaleString('pt-BR')}`}
+                      onChange={e => setSim(prev => ({ ...prev, investimento: e.target.value.replace(/\D/g, '') }))}
+                      className="w-full px-3 py-2 text-[12.5px] border border-[#e2e8f0] rounded-[7px] outline-none focus:border-[#1a6edb] text-[#0b1f3a] font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8] block mb-1.5">Prazo (meses)</label>
+                    <input
+                      type="number"
+                      value={sim.prazo}
+                      min={1} max={360}
+                      onChange={e => setSim(prev => ({ ...prev, prazo: e.target.value }))}
+                      className="w-full px-3 py-2 text-[12.5px] border border-[#e2e8f0] rounded-[7px] outline-none focus:border-[#1a6edb] text-[#0b1f3a] font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8] block mb-1.5">Alíquota IR</label>
+                    <select
+                      value={isExempt ? 'exempt' : sim.ir}
+                      disabled={isExempt}
+                      onChange={e => setSim(prev => ({ ...prev, ir: e.target.value }))}
+                      className="w-full px-3 py-2 text-[12.5px] border border-[#e2e8f0] rounded-[7px] outline-none focus:border-[#1a6edb] text-[#0b1f3a] font-medium"
+                    >
+                      {isExempt ? (
+                        <option value="exempt">Isento (0%)</option>
+                      ) : (
+                        <>
+                          <option value="auto">Automático (por prazo)</option>
+                          <option value="22.5">22,5% (≤ 6 meses)</option>
+                          <option value="20">20,0% (≤ 12 meses)</option>
+                          <option value="17.5">17,5% (≤ 24 meses)</option>
+                          <option value="15">15,0% (&gt; 24 meses)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8] block mb-1.5">Benchmark</label>
+                    <select
+                      value={sim.benchmark}
+                      onChange={e => setSim(prev => ({ ...prev, benchmark: e.target.value as typeof sim.benchmark }))}
+                      className="w-full px-3 py-2 text-[12.5px] border border-[#e2e8f0] rounded-[7px] outline-none focus:border-[#1a6edb] text-[#0b1f3a] font-medium"
+                    >
+                      <option value="CDI">CDI (10,75% a.a.)</option>
+                      <option value="IPCA">IPCA (5,00% a.a.)</option>
+                      <option value="Poupança">Poupança (7,50% a.a.)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="bg-[#f8fafc] rounded-[10px] p-4 space-y-3">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]">Resultado estimado</div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {[
+                      { label: 'Retorno bruto',         value: fmtPct(grossRate), color: '#0b1f3a' },
+                      { label: 'Retorno líquido IR',     value: fmtPct(netRate),   color: '#059669' },
+                      { label: 'Valor líquido no venc.', value: investRaw > 0 ? fmtBRL(netVal) : '—', color: '#0b1f3a' },
+                      { label: `Spread vs. ${sim.benchmark}`, value: `+${spreadPP.toFixed(2)} pp`, color: '#1a6edb' },
+                    ].map((r, i) => (
+                      <div key={i} className="bg-white border border-[#e2e8f0] rounded-[8px] px-3 py-2.5">
+                        <div className="text-[10px] text-[#94a3b8] mb-0.5">{r.label}</div>
+                        <div className="text-[13px] font-semibold" style={{ color: r.color }}>{r.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {investRaw > 0 && (
+                    <div className="bg-[#eff6ff] border border-[#bfdbfe] rounded-[8px] px-3 py-2.5 flex items-center gap-2">
+                      <i className="fas fa-chart-line text-[#1a6edb] text-[11px]"></i>
+                      <span className="text-[11.5px] text-[#1d4ed8]">
+                        {sim.benchmark} puro: {fmtBRL(benchVal)} · Ganho adicional: {fmtBRL(netVal - benchVal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[10px] text-[#94a3b8] leading-relaxed">
+                  * Taxa estimada: {sim.benchmark} + {spreadPP.toFixed(1)}pp (referência {deal.instrument}). Valores meramente indicativos — consulte a documentação oficial da operação.
+                </p>
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* Actions */}

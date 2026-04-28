@@ -34,7 +34,7 @@ const CONTRATOS: Documento[] = [
   },
   {
     id: 'd2', tipo: 'signed',
-    nome: 'Contrato de Originação — Bloxs × Roberto Alves',
+    nome: 'Contrato de Originação — Bloxs × Rafael Andrade',
     meta: 'Assinado em 15/01/2026 · PDF · 412 KB',
     status: 'Assinado', acoes: ['download'],
   },

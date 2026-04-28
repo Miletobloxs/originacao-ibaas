@@ -73,7 +73,9 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
   const [errors,    setErrors]    = useState<Partial<Record<keyof FormState, string>>>({});
   const [loading,   setLoading]   = useState(false);
   const [enviado,   setEnviado]   = useState(false);
-  const [rascunho,  setRascunho]  = useState(false);
+  const [savedAt,   setSavedAt]   = useState<string | null>(() => localStorage.getItem('originar_rascunho_at'));
+  const [saving,    setSaving]    = useState(false);
+  const [opId]                    = useState(() => `OP-${String(Date.now()).slice(-3)}`);
 
   function field<K extends keyof FormState>(key: K, val: FormState[K]) {
     setForm(f => ({ ...f, [key]: val }));
@@ -110,8 +112,14 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
   }
 
   function saveRascunho() {
-    setRascunho(true);
-    setTimeout(() => setRascunho(false), 2500);
+    setSaving(true);
+    localStorage.setItem('originar_rascunho', JSON.stringify(form));
+    setTimeout(() => {
+      const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      setSaving(false);
+      setSavedAt(time);
+      localStorage.setItem('originar_rascunho_at', time);
+    }, 600);
   }
 
   function handleSubmit() {
@@ -123,6 +131,8 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
     setTimeout(() => {
       setLoading(false);
       setEnviado(true);
+      localStorage.removeItem('originar_rascunho');
+      localStorage.removeItem('originar_rascunho_at');
       const today = new Date().toLocaleDateString('pt-BR');
       const instrument: Instrument = VALID_INSTRUMENTS.includes(form.instrumento as Instrument)
         ? (form.instrumento as Instrument)
@@ -159,7 +169,7 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
               Operação submetida com sucesso!
             </h2>
             <div className="inline-block bg-[#f1f5f9] rounded-full px-4 py-1.5 text-[12px] font-mono font-semibold text-[#64748b] mb-5">
-              ID: OP-013 · {form.instrumento} · {form.setor}
+              ID: {opId} · {form.instrumento} · {form.setor}
             </div>
             <p className="text-[14px] text-[#64748b] leading-relaxed mb-4">
               <strong className="text-[#0b1f3a]">{form.razaoSocial || 'Operação'}</strong> foi registrada no pipeline.
@@ -603,7 +613,7 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
 
                 <InfoBox variant="info">
                   <span className="text-[12.5px]">
-                    Ao enviar, esta operação será registrada como <strong>OP-013</strong> no Deal Flow com status
+                    Ao enviar, esta operação será registrada como <strong>{opId}</strong> no Deal Flow com status
                     <strong> "Originação"</strong>. A equipe de estruturação da Bloxs iniciará a análise em até 2 dias úteis.
                   </span>
                 </InfoBox>
@@ -644,8 +654,8 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                   Voltar
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={saveRascunho} icon={<i className="fas fa-save"></i>}>
-                {rascunho ? 'Rascunho salvo!' : 'Salvar Rascunho'}
+              <Button variant="ghost" size="sm" onClick={saveRascunho} icon={<i className={`fas fa-${saving ? 'spinner fa-spin' : savedAt ? 'check' : 'save'}`}></i>}>
+                {saving ? 'Salvando…' : savedAt ? `Salvo às ${savedAt}` : 'Salvar Rascunho'}
               </Button>
             </div>
 

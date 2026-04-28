@@ -569,7 +569,7 @@ export default function DashboardPage() {
           {activePage === 'mercado'     && <MercadoPage />}
           {activePage === 'educacional' && <EducacionalPage />}
           {activePage === 'comissoes'   && <ComissoesPage onGerarNF={handleGerarNF} />}
-          {activePage === 'financeiro'  && <FinanceiroPage nfPreSelected={nfPreSelected} />}
+          {activePage === 'financeiro'  && <FinanceiroPage nfPreSelected={nfPreSelected} onNFSubmit={() => setNfPreSelected(null)} />}
           {activePage === 'documentos'  && <DocumentosPage />}
           {activePage === 'historico'   && <HistoricoPage />}
           {activePage === 'wallet'      && <WalletPage />}
