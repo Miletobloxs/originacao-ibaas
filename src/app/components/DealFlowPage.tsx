@@ -59,6 +59,23 @@ const STAGE_PENDENCIES: Partial<Record<Stage, Pendency[]>> = {
   ],
 };
 
+// ─── SLA ──────────────────────────────────────────────────────────────────────
+
+const STAGE_AVG_DAYS: Partial<Record<Stage, number>> = {
+  originacao: 8, analise: 15, diligencia: 20, comite: 10, estruturacao: 30,
+};
+
+function parseBR(s: string): Date {
+  const [d, m, y] = s.split('/').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function daysInStage(deal: Deal): number {
+  const from  = parseBR(deal.lastUpdate);
+  const today = new Date(2026, 3, 28);
+  return Math.max(0, Math.round((today.getTime() - from.getTime()) / 86400000));
+}
+
 const DEAL_SPREADS: Record<string, number> = {
   'CRI': 3.5, 'CRA': 4.0, 'FIDC': 5.0, 'Debênture': 2.5,
   'CR': 3.0, 'Nota Comercial': 2.0, 'A definir': 3.0,
@@ -493,6 +510,21 @@ function DealCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
           {deal.lastUpdate}
         </span>
       </div>
+      {deal.stage !== 'concluido' && (() => {
+        const days = daysInStage(deal);
+        const avg  = STAGE_AVG_DAYS[deal.stage] ?? 10;
+        const ratio = days / avg;
+        const color = ratio >= 2 ? '#dc2626' : ratio >= 1.5 ? '#d97706' : '#94a3b8';
+        const icon  = ratio >= 2 ? 'fa-exclamation-circle' : ratio >= 1.5 ? 'fa-exclamation-triangle' : 'fa-clock';
+        return (
+          <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-[#f1f5f9]">
+            <i className={`fas ${icon} text-[9px]`} style={{ color }}></i>
+            <span className="text-[10px]" style={{ color }}>
+              {days}d nesta etapa · Média: {avg}d
+            </span>
+          </div>
+        );
+      })()}
     </button>
   );
 }

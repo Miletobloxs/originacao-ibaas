@@ -4,6 +4,15 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, TooltipProps
 } from 'recharts';
 import { PageHeader, Card, CardHeader, CardBody, Badge, Button } from './ds';
+import type { Deal } from './DealFlowPage';
+
+const STAGE_PROB: Record<string, number> = {
+  originacao: 0.20, analise: 0.40, diligencia: 0.60, comite: 0.80, estruturacao: 0.95,
+};
+const STAGE_LABEL: Record<string, string> = {
+  originacao: 'Originação', analise: 'Análise', diligencia: 'Diligência',
+  comite: 'Comitê', estruturacao: 'Estruturação',
+};
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -106,9 +115,12 @@ const OP_TO_VALUE: Record<string, string> = {
   'Telecom Norte':  'telecom',
 };
 
-interface Props { onGerarNF?: (operacaoValue: string, valor: number) => void }
+interface Props {
+  onGerarNF?: (operacaoValue: string, valor: number) => void;
+  deals?: Deal[];
+}
 
-export default function ComissoesPage({ onGerarNF }: Props) {
+export default function ComissoesPage({ onGerarNF, deals = [] }: Props) {
   const [filtroStatus, setFiltroStatus] = useState<StatusComissao | 'Todas'>('Todas');
 
   const comissoesFiltradas = filtroStatus === 'Todas'
@@ -450,6 +462,93 @@ export default function ComissoesPage({ onGerarNF }: Props) {
           </table>
         </div>
       </Card>
+
+      {/* ── 5.1 Forecast de Comissões por Pipeline ───────────────────── */}
+      {deals.filter(d => d.stage !== 'concluido').length > 0 && (() => {
+        const rows = deals
+          .filter(d => d.stage !== 'concluido')
+          .map(d => {
+            const bruta   = d.value * 15000;
+            const prob    = STAGE_PROB[d.stage] ?? 0.20;
+            return { title: d.title, stage: d.stage, bruta, prob, esperado: bruta * prob };
+          });
+        const totalEsperado = rows.reduce((s, r) => s + r.esperado, 0);
+        const totalBruta    = rows.reduce((s, r) => s + r.bruta, 0);
+
+        return (
+          <Card padding="none" className="mt-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--bloxs-blue)] mb-0.5">
+                    Pipeline
+                  </div>
+                  <h3 className="text-[16px] font-semibold text-[var(--bloxs-navy)]">
+                    Projeção por Operação em Pipeline
+                  </h3>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10.5px] text-[var(--bloxs-gray-400)] uppercase font-semibold tracking-wide mb-0.5">
+                    Valor esperado total
+                  </div>
+                  <div className="font-['Playfair_Display'] text-[20px] font-semibold text-[var(--bloxs-navy)]">
+                    {fmtBRL(totalEsperado)}
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-[var(--bloxs-border)] bg-[var(--bloxs-gray-50)]">
+                    {['Operação', 'Etapa atual', 'Comissão bruta (1,5%)', 'Probabilidade', 'Valor esperado'].map(h => (
+                      <th key={h} className="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[var(--bloxs-gray-400)]">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => (
+                    <tr key={i} className="border-b border-[var(--bloxs-border)] hover:bg-[var(--bloxs-gray-50)] transition-colors">
+                      <td className="px-5 py-3.5 text-[13px] font-semibold text-[var(--bloxs-navy)]">{r.title}</td>
+                      <td className="px-5 py-3.5">
+                        <span className="text-[11.5px] font-semibold px-2.5 py-1 rounded-full bg-[#f1f5f9] text-[#475569]">
+                          {STAGE_LABEL[r.stage] ?? r.stage}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-[12.5px] text-[var(--bloxs-navy)] font-medium">{fmtBRL(r.bruta)}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
+                            <div className="h-full bg-[#1a6edb] rounded-full" style={{ width: `${r.prob * 100}%` }} />
+                          </div>
+                          <span className="text-[12px] font-semibold text-[var(--bloxs-navy)]">{(r.prob * 100).toFixed(0)}%</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-[13px] font-bold text-[#059669]">{fmtBRL(r.esperado)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-[var(--bloxs-border)] bg-[var(--bloxs-gray-50)]">
+                    <td colSpan={2} className="px-5 py-3.5 text-[11.5px] font-semibold text-[var(--bloxs-gray-500)] uppercase tracking-[0.06em]">
+                      Total pipeline ({rows.length} operações)
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="font-['Playfair_Display'] text-[15px] font-semibold text-[var(--bloxs-navy)]">{fmtBRL(totalBruta)}</span>
+                    </td>
+                    <td className="px-5 py-3.5 text-[11px] text-[var(--bloxs-gray-400)]">ponderado</td>
+                    <td className="px-5 py-3.5">
+                      <span className="font-['Playfair_Display'] text-[16px] font-semibold text-[#059669]">{fmtBRL(totalEsperado)}</span>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   );
 }

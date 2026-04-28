@@ -27,6 +27,40 @@ interface FormState {
   confirmado: boolean;
 }
 
+// ─── MARKET INTELLIGENCE ─────────────────────────────────────────────────────
+
+const MARKET_BENCHMARKS: Record<string, { avg: number; min: number; max: number; label: string }> = {
+  'FIDC':           { avg: 4.8, min: 3.5, max: 8.0, label: 'FIDC Sênior (ANBIMA)' },
+  'CRI':            { avg: 3.8, min: 2.5, max: 6.0, label: 'CRI — Mercado Secundário' },
+  'CRA':            { avg: 4.2, min: 3.0, max: 6.5, label: 'CRA — Mercado Secundário' },
+  'Debênture':      { avg: 3.0, min: 1.5, max: 5.5, label: 'Debêntures Incentivadas' },
+  'Nota Comercial': { avg: 2.5, min: 1.0, max: 4.5, label: 'Nota Comercial' },
+  'CCB':            { avg: 3.2, min: 2.0, max: 5.0, label: 'CCB' },
+  'CPR':            { avg: 3.5, min: 2.5, max: 5.5, label: 'CPR' },
+};
+
+const ELIG_CRITERIA: Record<string, string[]> = {
+  CRI: [
+    'Lastro em recebíveis imobiliários (contratos de locação, financiamento ou CCI)',
+    'Emissor com >2/3 da receita bruta proveniente do setor imobiliário (CMN 5.118)',
+    'Imóveis lastro com matrícula atualizada (≤ 6 meses) e livre de ônus',
+  ],
+  CRA: [
+    'Lastro em recebíveis do agronegócio (CPR, CDA, WA, CDCA ou contratos)',
+    'Emissor com atividade agropecuária ou agroindustrial como atividade principal',
+    'Documentação de origem e rastreabilidade da produção disponível',
+  ],
+};
+
+// ─── GARANTIA ITEM ────────────────────────────────────────────────────────────
+
+interface GarantiaItem {
+  id: string;
+  tipo: string;
+  hierarquia: 'Principal' | 'Complementar' | 'Adicional';
+  valor: string;
+}
+
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
 const STEPS = [
@@ -73,9 +107,14 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
   const [errors,    setErrors]    = useState<Partial<Record<keyof FormState, string>>>({});
   const [loading,   setLoading]   = useState(false);
   const [enviado,   setEnviado]   = useState(false);
-  const [savedAt,   setSavedAt]   = useState<string | null>(() => localStorage.getItem('originar_rascunho_at'));
-  const [saving,    setSaving]    = useState(false);
-  const [opId]                    = useState(() => `OP-${String(Date.now()).slice(-3)}`);
+  const [savedAt,      setSavedAt]      = useState<string | null>(() => localStorage.getItem('originar_rascunho_at'));
+  const [saving,       setSaving]       = useState(false);
+  const [opId]                          = useState(() => `OP-${String(Date.now()).slice(-3)}`);
+  const [garantias,    setGarantias]    = useState<GarantiaItem[]>([{ id: '1', tipo: '', hierarquia: 'Principal', valor: '' }]);
+  const [eligChecks,   setEligChecks]   = useState<Record<string, 'sim' | 'nao' | 'nao_sei'>>({});
+  const [eligWarning,  setEligWarning]  = useState(false);
+  const [showTeaser,   setShowTeaser]   = useState(false);
+  const [teaserLoading, setTeaserLoading] = useState(false);
 
   function field<K extends keyof FormState>(key: K, val: FormState[K]) {
     setForm(f => ({ ...f, [key]: val }));
@@ -101,7 +140,12 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
   }
 
   function nextStep() {
+    if (step === 1 && ['CRI', 'CRA'].includes(form.instrumento)) {
+      const hasNao = Object.values(eligChecks).some(v => v === 'nao');
+      if (hasNao && !eligWarning) { setEligWarning(true); return; }
+    }
     if (!validate(step)) return;
+    setEligWarning(false);
     setStep(s => (s + 1) as 1|2|3|4);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -156,6 +200,11 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
     }, 1500);
   }
 
+  // ── Volume / LTV helpers (needed in both success screen and main render) ───
+  const volumeMM        = parseMM(form.volume);
+  const totalGarantiaMM = garantias.reduce((s, g) => s + parseMM(g.valor), 0);
+  const ltv = volumeMM > 0 ? Math.round((totalGarantiaMM / volumeMM) * 100) : 0;
+
   // ── Success screen ─────────────────────────────────────────────────────────
   if (enviado) {
     return (
@@ -188,7 +237,7 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                 </div>
               ))}
             </div>
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-3 justify-center flex-wrap">
               <Button
                 variant="primary"
                 icon={<i className="fas fa-stream"></i>}
@@ -198,22 +247,28 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
               </Button>
               <Button
                 variant="outline"
+                icon={<i className={`fas fa-${teaserLoading ? 'spinner fa-spin' : 'file-pdf'}`}></i>}
+                onClick={() => {
+                  setTeaserLoading(true);
+                  setTimeout(() => { setTeaserLoading(false); setShowTeaser(true); }, 1500);
+                }}
+              >
+                {teaserLoading ? 'Gerando Teaser…' : 'Baixar Teaser'}
+              </Button>
+              <Button
+                variant="outline"
                 icon={<i className="fas fa-plus"></i>}
-                onClick={() => { setEnviado(false); setForm(EMPTY); setStep(1); }}
+                onClick={() => { setEnviado(false); setForm(EMPTY); setStep(1); setGarantias([{ id: '1', tipo: '', hierarquia: 'Principal', valor: '' }]); }}
               >
                 Nova Operação
               </Button>
             </div>
+            {showTeaser && <TeaserModal form={form} garantias={garantias} ltv={ltv} onClose={() => setShowTeaser(false)} />}
           </Card>
         </div>
       </div>
     );
   }
-
-  // ── Volume / LTV helpers ──────────────────────────────────────────────────
-  const volumeMM  = parseMM(form.volume);
-  const garantiaMM = parseMM(form.valorGarantia);
-  const ltv = volumeMM > 0 ? Math.round((garantiaMM / volumeMM) * 100) : 0;
 
   return (
     <div className="p-8 max-w-[1440px] mx-auto">
@@ -358,6 +413,92 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                   rows={4}
                   helperText="Opcional. Informações adicionais aceleram a análise da equipe de estruturação."
                 />
+
+                {/* ── 1.1 Inteligência de Mercado Inline ────────────────── */}
+                {(() => {
+                  const bench = MARKET_BENCHMARKS[form.instrumento];
+                  const spreadNum = parseFloat((form.spread || '0').replace(',', '.'));
+                  if (!bench || !spreadNum) return null;
+                  const diff = spreadNum - bench.avg;
+                  const pos = diff > bench.avg * 0.15 ? 'above' : diff < -bench.avg * 0.15 ? 'below' : 'at';
+                  const cfg = {
+                    above: { bg:'#f0fdf4', border:'#86efac', text:'#15803d', icon:'fa-arrow-trend-up', label:'Acima da média — posicionamento agressivo' },
+                    at:    { bg:'#eff6ff', border:'#bfdbfe', text:'#1d4ed8', icon:'fa-equals',          label:'Na média de mercado' },
+                    below: { bg:'#fffbeb', border:'#fde68a', text:'#b45309', icon:'fa-arrow-trend-down', label:'Abaixo da média — reavalie o spread' },
+                  }[pos];
+                  return (
+                    <div style={{ background: cfg.bg, borderColor: cfg.border }} className="rounded-xl p-4 border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <i className={`fas ${cfg.icon} text-[12px]`} style={{ color: cfg.text }}></i>
+                        <span className="text-[12.5px] font-semibold" style={{ color: cfg.text }}>
+                          Inteligência de Mercado — {bench.label}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3 text-center">
+                        {[
+                          { label: 'Seu spread',    value: `${form.indexador} ${spreadNum.toFixed(1)}%`, highlight: true },
+                          { label: 'Média mercado', value: `${form.indexador} ${bench.avg.toFixed(1)}%`, highlight: false },
+                          { label: 'Mínimo',        value: `${form.indexador} ${bench.min.toFixed(1)}%`, highlight: false },
+                          { label: 'Máximo',        value: `${form.indexador} ${bench.max.toFixed(1)}%`, highlight: false },
+                        ].map((m, i) => (
+                          <div key={i} className="bg-white/70 rounded-lg px-3 py-2">
+                            <div className="text-[10px] text-[#94a3b8] uppercase font-semibold mb-0.5">{m.label}</div>
+                            <div className="text-[13px] font-bold" style={{ color: m.highlight ? cfg.text : '#0b1f3a' }}>{m.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[11px] mt-2" style={{ color: cfg.text }}>{cfg.label}{pos === 'above' ? ` · Diferença de +${diff.toFixed(1)}pp vs. média` : pos === 'below' ? ` · Diferença de ${diff.toFixed(1)}pp vs. média` : ''}.</p>
+                    </div>
+                  );
+                })()}
+
+                {/* ── 1.2 Elegibilidade Regulatória ─────────────────────── */}
+                {['CRI', 'CRA'].includes(form.instrumento) && (
+                  <div className="bg-[#fffbeb] border border-[#fde68a] rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <i className="fas fa-balance-scale text-[#d97706]"></i>
+                      <span className="text-[12.5px] font-semibold text-[#92400e]">
+                        Elegibilidade Regulatória — {form.instrumento}
+                      </span>
+                    </div>
+                    <p className="text-[11.5px] text-[#92400e] mb-3">
+                      Confirme o enquadramento nos critérios antes de avançar:
+                    </p>
+                    {(ELIG_CRITERIA[form.instrumento] ?? []).map((criterion, idx) => {
+                      const key = `${form.instrumento}_${idx}`;
+                      const val = eligChecks[key];
+                      return (
+                        <div key={key} className="flex items-start gap-3 mb-2.5">
+                          <div className="flex gap-1 flex-shrink-0 mt-0.5">
+                            {(['sim', 'nao', 'nao_sei'] as const).map(opt => (
+                              <button key={opt}
+                                onClick={() => { setEligChecks(prev => ({ ...prev, [key]: opt })); setEligWarning(false); }}
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all ${
+                                  val === opt
+                                    ? opt === 'sim'  ? 'bg-[#059669] text-white border-[#059669]'
+                                    : opt === 'nao'  ? 'bg-[#dc2626] text-white border-[#dc2626]'
+                                    :                  'bg-[#6b7280] text-white border-[#6b7280]'
+                                    : 'bg-white text-[#6b7280] border-[#d1d5db] hover:border-[#6b7280]'
+                                }`}
+                              >
+                                {opt === 'sim' ? 'Sim' : opt === 'nao' ? 'Não' : '?'}
+                              </button>
+                            ))}
+                          </div>
+                          <span className="text-[12px] text-[#475569]">{criterion}</span>
+                        </div>
+                      );
+                    })}
+                    {eligWarning && (
+                      <div className="mt-3 bg-[#fef2f2] border border-[#fecaca] rounded-[8px] p-3">
+                        <p className="text-[12px] text-[#dc2626] font-medium">
+                          <i className="fas fa-exclamation-circle mr-1.5"></i>
+                          Um ou mais critérios marcados como "Não" podem indicar inelegibilidade regulatória. Clique "Próximo" novamente para confirmar mesmo assim.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -439,85 +580,114 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
               </div>
             )}
 
-            {/* ── STEP 3: Garantias ─────────────────────────────────────── */}
+            {/* ── STEP 3: Garantias (múltiplas) ─────────────────────────── */}
             {step === 3 && (
-              <div className="space-y-5">
-                <div className="grid grid-cols-2 gap-5">
-                  <Select
-                    label="Tipo de Garantia"
-                    value={form.tipoGarantia}
-                    onChange={e => field('tipoGarantia', e.target.value)}
-                    options={[
-                      { value: '',                      label: 'Selecione' },
-                      { value: 'Alienação Fiduciária',  label: 'Alienação Fiduciária' },
-                      { value: 'Penhor de Recebíveis',  label: 'Penhor de Recebíveis' },
-                      { value: 'Aval',                  label: 'Aval' },
-                      { value: 'Fiança Bancária',        label: 'Fiança Bancária' },
-                      { value: 'Garantia Real Imobiliária', label: 'Garantia Real Imobiliária' },
-                      { value: 'Fundo de Reserva',      label: 'Fundo de Reserva' },
-                      { value: 'Sem Garantia',          label: 'Sem Garantia (sênior/subordinada)' },
-                    ]}
-                  />
-                  <Input
-                    label="Valor da Garantia (R$ MM)"
-                    value={form.valorGarantia}
-                    onChange={e => field('valorGarantia', e.target.value.replace(/\D/g,'').slice(0,5))}
-                    placeholder="Ex: 75"
-                    rightIcon={<span className="text-[11px] font-semibold">MM</span>}
-                    helperText={volumeMM > 0 && garantiaMM > 0 ? `LTV calculado: ${ltv}%` : undefined}
-                  />
-                </div>
+              <div className="space-y-4">
+                {garantias.map((g, idx) => (
+                  <div key={g.id} className="border border-[#e2e8f0] rounded-xl p-4 bg-[#fafbfc]">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className={`text-[10.5px] font-semibold px-2.5 py-1 rounded-full ${
+                        g.hierarquia === 'Principal'    ? 'bg-[#ede9fe] text-[#6d28d9]' :
+                        g.hierarquia === 'Complementar' ? 'bg-[#e0f2fe] text-[#0369a1]' :
+                                                          'bg-[#f1f5f9] text-[#475569]'
+                      }`}>
+                        {idx + 1}ª camada — {g.hierarquia}
+                      </span>
+                      {garantias.length > 1 && (
+                        <button
+                          onClick={() => setGarantias(prev => prev.filter(x => x.id !== g.id))}
+                          className="text-[11px] text-[#94a3b8] hover:text-[#dc2626] transition-colors flex items-center gap-1"
+                        >
+                          <i className="fas fa-times"></i> Remover
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <Select
+                        label="Tipo de Garantia"
+                        value={g.tipo}
+                        onChange={e => setGarantias(prev => prev.map(x => x.id === g.id ? { ...x, tipo: e.target.value } : x))}
+                        options={[
+                          { value: '',                             label: 'Selecione' },
+                          { value: 'Alienação Fiduciária de Imóvel', label: 'Alienação Fiduciária de Imóvel' },
+                          { value: 'Cessão de Recebíveis',          label: 'Cessão de Recebíveis' },
+                          { value: 'Aval / Garantia Corporativa',   label: 'Aval / Garantia Corporativa' },
+                          { value: 'Fundo de Reserva',              label: 'Fundo de Reserva' },
+                          { value: 'Penhor de Ações',               label: 'Penhor de Ações' },
+                          { value: 'Seguro de Crédito',             label: 'Seguro de Crédito' },
+                          { value: 'Outras',                        label: 'Outras' },
+                        ]}
+                      />
+                      <Select
+                        label="Hierarquia"
+                        value={g.hierarquia}
+                        onChange={e => setGarantias(prev => prev.map(x => x.id === g.id ? { ...x, hierarquia: e.target.value as GarantiaItem['hierarquia'] } : x))}
+                        options={[
+                          { value: 'Principal',    label: 'Principal (1ª camada)'    },
+                          { value: 'Complementar', label: 'Complementar (2ª camada)' },
+                          { value: 'Adicional',    label: 'Adicional (3ª camada)'    },
+                        ]}
+                      />
+                      <Input
+                        label="Valor (R$ MM)"
+                        value={g.valor}
+                        onChange={e => setGarantias(prev => prev.map(x => x.id === g.id ? { ...x, valor: e.target.value.replace(/\D/g,'').slice(0,5) } : x))}
+                        placeholder="Ex: 75"
+                        rightIcon={<span className="text-[11px] font-semibold">MM</span>}
+                      />
+                    </div>
+                  </div>
+                ))}
 
-                {/* LTV indicator */}
-                {volumeMM > 0 && garantiaMM > 0 && (
+                <button
+                  onClick={() => setGarantias(prev => [...prev, {
+                    id: String(Date.now()),
+                    tipo: '',
+                    hierarquia: prev.length === 0 ? 'Principal' : prev.length === 1 ? 'Complementar' : 'Adicional',
+                    valor: '',
+                  }])}
+                  className="w-full py-3 border-2 border-dashed border-[#e2e8f0] rounded-xl text-[13px] font-semibold text-[#64748b] hover:border-[#1a6edb] hover:text-[#1a6edb] hover:bg-[#f8faff] transition-all flex items-center justify-center gap-2"
+                >
+                  <i className="fas fa-plus text-[12px]"></i>
+                  Adicionar Garantia
+                </button>
+
+                {volumeMM > 0 && totalGarantiaMM > 0 && (
                   <div className={`rounded-xl p-4 border ${
                     ltv >= 100 ? 'bg-[#f0fdf4] border-[#86efac]' :
                     ltv >= 70  ? 'bg-[#fffbeb] border-[#fde68a]' :
                                  'bg-[#fef2f2] border-[#fecaca]'
                   }`}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className={`text-[12px] font-semibold ${
-                        ltv >= 100 ? 'text-[#15803d]' : ltv >= 70 ? 'text-[#92400e]' : 'text-[#dc2626]'
-                      }`}>
+                      <span className={`text-[12px] font-semibold ${ltv >= 100 ? 'text-[#15803d]' : ltv >= 70 ? 'text-[#92400e]' : 'text-[#dc2626]'}`}>
                         <i className={`fas ${ltv >= 100 ? 'fa-shield-alt' : ltv >= 70 ? 'fa-exclamation-triangle' : 'fa-times-circle'} mr-1.5`}></i>
-                        Cobertura de Garantia: {ltv}%
+                        LTV Global: {ltv}%
                       </span>
-                      <span className="text-[11px] text-[#94a3b8]">
-                        R$ {garantiaMM} MM / R$ {volumeMM} MM
-                      </span>
+                      <span className="text-[11px] text-[#94a3b8]">R$ {totalGarantiaMM}MM garantia / R$ {volumeMM}MM volume</span>
                     </div>
                     <div className="h-2 bg-white/60 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          ltv >= 100 ? 'bg-[#22c55e]' : ltv >= 70 ? 'bg-[#f59e0b]' : 'bg-[#ef4444]'
-                        }`}
-                        style={{ width: `${Math.min(ltv, 100)}%` }}
-                      />
+                      <div className={`h-full rounded-full transition-all ${ltv >= 100 ? 'bg-[#22c55e]' : ltv >= 70 ? 'bg-[#f59e0b]' : 'bg-[#ef4444]'}`}
+                        style={{ width: `${Math.min(ltv, 100)}%` }} />
                     </div>
                   </div>
                 )}
 
                 <Textarea
-                  label="Descrição da Garantia"
+                  label="Observações sobre as Garantias"
                   value={form.descGarantia}
                   onChange={e => field('descGarantia', e.target.value)}
-                  placeholder="Descreva o bem dado em garantia, localização, avaliação, registro em cartório, etc."
-                  rows={4}
+                  placeholder="Informações adicionais sobre avaliação, cartório, restrições, etc."
+                  rows={3}
                 />
 
-                {/* Upload visual */}
                 <div>
                   <div className="text-[13px] font-medium text-[#1e293b] mb-1.5">
-                    Documentos de Suporte <span className="text-[11px] text-[#94a3b8] font-normal">(opcional)</span>
+                    Documentos de Garantia <span className="text-[11px] text-[#94a3b8] font-normal">(opcional)</span>
                   </div>
                   <div className="border-2 border-dashed border-[#e2e8f0] rounded-xl p-8 text-center hover:border-[#1a6edb]/50 hover:bg-[#f8faff] transition-all cursor-pointer">
                     <i className="fas fa-cloud-upload-alt text-[28px] text-[#94a3b8] mb-3 block"></i>
-                    <div className="text-[13px] font-semibold text-[#0b1f3a] mb-1">
-                      Arraste arquivos ou clique para selecionar
-                    </div>
-                    <div className="text-[11px] text-[#94a3b8]">
-                      Laudo de avaliação, matrícula do imóvel, contrato de penhor… PDF ou DOCX, máx. 10 MB por arquivo
-                    </div>
+                    <div className="text-[13px] font-semibold text-[#0b1f3a] mb-1">Arraste arquivos ou clique para selecionar</div>
+                    <div className="text-[11px] text-[#94a3b8]">Laudo de avaliação, matrícula do imóvel, contrato de cessão… PDF ou DOCX, máx. 10 MB</div>
                   </div>
                 </div>
               </div>
@@ -591,23 +761,19 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                       </button>
                     </div>
                     <dl className="space-y-2">
-                      {[
-                        ['Tipo',     form.tipoGarantia || 'Não informado'],
-                        ['Valor',    form.valorGarantia ? `R$ ${form.valorGarantia} MM` : '—'],
-                        ['Cobertura', volumeMM > 0 && garantiaMM > 0 ? `${ltv}% do volume` : '—'],
-                      ].map(([k, v]) => (
-                        <div key={k}>
-                          <dt className="text-[10px] uppercase font-semibold text-[#94a3b8]">{k}</dt>
-                          <dd className="text-[12.5px] font-semibold text-[#0b1f3a]">{v}</dd>
+                      {garantias.map(g => (
+                        <div key={g.id}>
+                          <dt className="text-[10px] uppercase font-semibold text-[#94a3b8]">{g.hierarquia}</dt>
+                          <dd className="text-[12.5px] font-semibold text-[#0b1f3a]">
+                            {g.tipo || 'Tipo não definido'}{g.valor ? ` · R$ ${g.valor}MM` : ''}
+                          </dd>
                         </div>
                       ))}
-                    </dl>
-                    {form.descGarantia && (
-                      <div className="mt-3 pt-3 border-t border-[#e2e8f0]">
-                        <dt className="text-[10px] uppercase font-semibold text-[#94a3b8] mb-1">Descrição</dt>
-                        <dd className="text-[11.5px] text-[#475569] leading-relaxed line-clamp-4">{form.descGarantia}</dd>
+                      <div>
+                        <dt className="text-[10px] uppercase font-semibold text-[#94a3b8]">LTV Global</dt>
+                        <dd className="text-[12.5px] font-semibold text-[#0b1f3a]">{ltv > 0 ? `${ltv}%` : '—'}</dd>
                       </div>
-                    )}
+                    </dl>
                   </div>
                 </div>
 
@@ -678,5 +844,159 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
         </Card>
       </div>
     </div>
+  );
+}
+
+// ─── TEASER MODAL (6.1) ───────────────────────────────────────────────────────
+
+function TeaserModal({ form, garantias, ltv, onClose }: {
+  form: FormState;
+  garantias: GarantiaItem[];
+  ltv: number;
+  onClose: () => void;
+}) {
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/60 z-[700]" onClick={onClose} />
+      <div className="fixed inset-0 z-[800] flex items-center justify-center p-4 overflow-auto">
+        <div className="bg-white rounded-[16px] shadow-2xl w-full max-w-[700px] overflow-hidden">
+
+          {/* Header */}
+          <div className="bg-[#0b1f3a] px-8 py-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src="https://bloxs.com.br/_next/static/media/logotype-bloxs.24b4579c.svg" alt="Bloxs" className="h-5 brightness-0 invert" />
+              <span className="text-white/40 text-[16px]">|</span>
+              <span className="text-white/80 text-[12px] font-medium">Investment Teaser</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-white/50 text-[11px]">Gerado em {hoje}</span>
+              <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">
+                <i className="fas fa-times text-[14px]"></i>
+              </button>
+            </div>
+          </div>
+
+          <div className="px-8 py-6 space-y-5">
+            {/* Título */}
+            <div className="border-b border-[#e2e8f0] pb-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#94a3b8] mb-1">Operação</div>
+              <h1 className="font-['Playfair_Display'] text-[24px] font-semibold text-[#0b1f3a]">
+                {form.razaoSocial || 'Emissor não informado'}
+              </h1>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                {form.instrumento && (
+                  <span className="bg-[#0b1f3a] text-white text-[11px] font-semibold px-3 py-1 rounded-full">
+                    {form.instrumento}
+                  </span>
+                )}
+                {form.rating && (
+                  <span className="bg-[#ede9fe] text-[#6d28d9] text-[11px] font-semibold px-3 py-1 rounded-full">
+                    Rating {form.rating}
+                  </span>
+                )}
+                {form.setor && (
+                  <span className="bg-[#f1f5f9] text-[#475569] text-[11px] font-medium px-3 py-1 rounded-full">
+                    {form.setor}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* KPIs */}
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: 'Volume',     value: form.volume   ? `R$ ${form.volume} MM`              : '—' },
+                { label: 'Taxa',       value: form.spread   ? `${form.indexador} +${form.spread}%` : '—' },
+                { label: 'Prazo',      value: form.prazo    ? `${form.prazo} meses`                : '—' },
+                { label: 'Amortização', value: form.amortizacao || '—' },
+              ].map((k, i) => (
+                <div key={i} className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3 text-center">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8] mb-1">{k.label}</div>
+                  <div className="text-[14px] font-bold text-[#0b1f3a]">{k.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Emissor + Garantias */}
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#1a6edb] mb-2 flex items-center gap-1.5">
+                  <i className="fas fa-building text-[10px]"></i> Emissor
+                </div>
+                <dl className="space-y-1.5">
+                  {[
+                    ['Razão Social', form.razaoSocial || '—'],
+                    ['CNPJ',         form.cnpj        || '—'],
+                    ['Localização',  form.endereco    || '—'],
+                    ['Responsável',  form.contato     || '—'],
+                  ].map(([k, v]) => (
+                    <div key={k}>
+                      <dt className="text-[10px] text-[#94a3b8] font-semibold uppercase">{k}</dt>
+                      <dd className="text-[12.5px] text-[#0b1f3a] font-medium break-all">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#1a6edb] mb-2 flex items-center gap-1.5">
+                  <i className="fas fa-shield-alt text-[10px]"></i> Garantias
+                </div>
+                {garantias.filter(g => g.tipo).length > 0 ? (
+                  <dl className="space-y-1.5">
+                    {garantias.filter(g => g.tipo).map(g => (
+                      <div key={g.id}>
+                        <dt className="text-[10px] text-[#94a3b8] font-semibold uppercase">{g.hierarquia}</dt>
+                        <dd className="text-[12.5px] text-[#0b1f3a] font-medium">
+                          {g.tipo}{g.valor ? ` · R$ ${g.valor}MM` : ''}
+                        </dd>
+                      </div>
+                    ))}
+                    {ltv > 0 && (
+                      <div>
+                        <dt className="text-[10px] text-[#94a3b8] font-semibold uppercase">LTV Global</dt>
+                        <dd className="text-[12.5px] text-[#0b1f3a] font-medium">{ltv}%</dd>
+                      </div>
+                    )}
+                  </dl>
+                ) : (
+                  <p className="text-[12px] text-[#94a3b8]">Não informadas</p>
+                )}
+              </div>
+            </div>
+
+            {/* Uso dos Recursos */}
+            {(form.usoRecursos || form.descricao) && (
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#1a6edb] mb-2 flex items-center gap-1.5">
+                  <i className="fas fa-bullseye text-[10px]"></i> Uso dos Recursos
+                </div>
+                <p className="text-[12.5px] text-[#475569] leading-relaxed">
+                  {form.usoRecursos || form.descricao}
+                </p>
+              </div>
+            )}
+
+            {/* Footer legal */}
+            <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] px-4 py-3">
+              <p className="text-[10px] text-[#94a3b8] leading-relaxed">
+                <strong>CONFIDENCIAL.</strong> Este documento contém informações proprietárias destinadas exclusivamente a Investidores Qualificados conforme definição da RCVM 30/2023. Proibida sua reprodução, distribuição ou divulgação sem autorização expressa da Bloxs Securitizadora. As informações foram fornecidas pelo originador e não constituem oferta pública de valores mobiliários. ID: {form.razaoSocial?.slice(0,3).toUpperCase() || 'BLX'}-{Date.now().toString().slice(-6)} · Bloxs IBaaS Originação.
+              </p>
+            </div>
+          </div>
+
+          <div className="px-8 py-4 border-t border-[#e2e8f0] flex gap-3 justify-end bg-[#fafbfc]">
+            <button onClick={onClose} className="px-4 py-2 text-[13px] font-medium text-[#475569] border border-[#e2e8f0] rounded-[8px] hover:border-[#0b1f3a] transition-all">
+              Fechar
+            </button>
+            <button onClick={() => window.print()} className="px-4 py-2 text-[13px] font-semibold text-white bg-[#0b1f3a] rounded-[8px] hover:bg-[#1a6edb] transition-all flex items-center gap-2">
+              <i className="fas fa-print text-[11px]"></i>
+              Imprimir / Salvar PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

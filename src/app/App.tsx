@@ -11,7 +11,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/*" element={<DashboardPage />} />
         <Route path="/design-system" element={<DesignSystemDemo />} />
         <Route path="/padronizacao" element={<DesignSystemPadronizacao />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, TooltipProps
@@ -74,7 +75,10 @@ function TooltipSetor({ active, payload, label }: TooltipProps<number, string>) 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [activePage,         setActivePage]         = useState<PageId>('dashboard');
+  const navigate   = useNavigate();
+  const location   = useLocation();
+  const activePage = ((location.pathname.replace('/dashboard', '').replace('/', '') || 'dashboard') as PageId);
+
   const [showNotifications,  setShowNotifications]  = useState(false);
   const [showUserMenu,       setShowUserMenu]       = useState(false);
   const [showSuporte,        setShowSuporte]        = useState(false);
@@ -92,7 +96,7 @@ export default function DashboardPage() {
   }
 
   function nav(page: PageId) {
-    setActivePage(page);
+    navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
     setShowNotifications(false);
     setShowUserMenu(false);
   }
@@ -568,7 +572,7 @@ export default function DashboardPage() {
           {activePage === 'dealflow'    && <DealFlowPage deals={deals} />}
           {activePage === 'mercado'     && <MercadoPage />}
           {activePage === 'educacional' && <EducacionalPage />}
-          {activePage === 'comissoes'   && <ComissoesPage onGerarNF={handleGerarNF} />}
+          {activePage === 'comissoes'   && <ComissoesPage onGerarNF={handleGerarNF} deals={deals} />}
           {activePage === 'financeiro'  && <FinanceiroPage nfPreSelected={nfPreSelected} onNFSubmit={() => setNfPreSelected(null)} />}
           {activePage === 'documentos'  && <DocumentosPage />}
           {activePage === 'historico'   && <HistoricoPage />}
