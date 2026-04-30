@@ -780,13 +780,13 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                       </div>
                       <div>
                         <div className="text-[13px] font-semibold text-[#0b1f3a] flex items-center gap-2">
-                          Protocolo DCC
+                          DCC — Digital Cash Collateral
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ede9fe] text-[#6d28d9]">
                             Novo
                           </span>
                         </div>
                         <div className="text-[11.5px] text-[#64748b] mt-0.5">
-                          Registre suas garantias on-chain via Bloxs Blockchain
+                          Construa colateral líquido digital para esta operação
                         </div>
                       </div>
                     </div>
@@ -797,14 +797,14 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                   {showDCC && (
                     <div className="px-5 py-5 border-t border-[#e2e8f0] space-y-4">
                       <p className="text-[13px] text-[#475569] leading-relaxed">
-                        O <strong className="text-[#0b1f3a]">Protocolo DCC (Digital Credit Certificate)</strong> é a infraestrutura blockchain da Bloxs para registro imutável de garantias e direitos creditórios. Ao aderir, cada camada de garantia desta operação recebe um <strong className="text-[#0b1f3a]">token on-chain</strong> vinculado ao contrato, garantindo rastreabilidade, transparência e liquidez no mercado secundário.
+                        O <strong className="text-[#0b1f3a]">DCC (Digital Cash Collateral)</strong> é um novo formato de colateral líquido da Bloxs — uma posição em caixa digital que substitui ou complementa garantias tradicionais. Em vez de imobilizar ativos físicos, o emissor deposita recursos tokenizados que ficam segregados e disponíveis para execução imediata em caso de inadimplência, reduzindo custo de estruturação e acelerando o processo de aprovação.
                       </p>
 
                       <div className="grid grid-cols-3 gap-3">
                         {[
-                          { icon: 'fa-link',          title: 'Registro imutável',     desc: 'Hash da garantia gravado na blockchain — à prova de alteração.' },
-                          { icon: 'fa-exchange-alt',  title: 'Liquidez secundária',   desc: 'Tokens negociáveis entre investidores qualificados após emissão.' },
-                          { icon: 'fa-shield-check',  title: 'Conformidade regulada', desc: 'Protocolo alinhado à sandbox da CVM e infraestrutura DREX.' },
+                          { icon: 'fa-bolt',          title: 'Execução imediata',    desc: 'Colateral disponível para liquidação instantânea — sem necessidade de ação judicial.' },
+                          { icon: 'fa-water',         title: 'Colateral líquido',    desc: 'Recursos em caixa digital, sem imobilização de ativos físicos ou reais.' },
+                          { icon: 'fa-chart-line',    title: 'Melhora o rating',     desc: 'Estrutura de colateral líquido eleva o perfil de crédito e pode reduzir o spread exigido.' },
                         ].map((item, i) => (
                           <div key={i} className="bg-[#f8fafc] rounded-[10px] p-3.5 border border-[#e2e8f0]">
                             <div className="w-7 h-7 rounded-[6px] bg-[#0b1f3a] flex items-center justify-center mb-2.5">
@@ -818,7 +818,7 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
 
                       <div className="flex items-center justify-between pt-1">
                         <p className="text-[11px] text-[#94a3b8] leading-relaxed max-w-[360px]">
-                          A adesão é opcional e não impacta o fluxo de aprovação. A tokenização ocorre após a emissão da operação.
+                          O DCC é opcional e complementar às garantias tradicionais. A estruturação ocorre em paralelo ao fluxo de aprovação.
                         </p>
                         <button
                           onClick={() => window.open('https://bloxs.com.br', '_blank')}
