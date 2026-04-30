@@ -287,11 +287,15 @@ export default function DealFlowPage({ deals: dealsProp }: { deals?: Deal[] }) {
   const [search, setSearch] = useState('');
   const [filterInstrument, setFilterInstrument] = useState('');
   const [filterSector, setFilterSector] = useState('');
+  const [filterVolMin, setFilterVolMin] = useState('');
+  const [filterVolMax, setFilterVolMax] = useState('');
 
   const filteredDeals = deals.filter((d: Deal) =>
     d.title.toLowerCase().includes(search.toLowerCase()) &&
     (!filterInstrument || d.instrument === filterInstrument) &&
-    (!filterSector || d.sector === filterSector)
+    (!filterSector || d.sector === filterSector) &&
+    (!filterVolMin || d.value >= Number(filterVolMin)) &&
+    (!filterVolMax || d.value <= Number(filterVolMax))
   );
 
   const activeDeals = deals.filter((d: Deal) => d.stage !== 'concluido');
@@ -302,7 +306,7 @@ export default function DealFlowPage({ deals: dealsProp }: { deals?: Deal[] }) {
   const dealsForColumn = (stage: Stage) => filteredDeals.filter((d: Deal) => d.stage === stage);
   const colVolume = (stage: Stage) => deals.filter((d: Deal) => d.stage === stage).reduce((sum: number, d: Deal) => sum + d.value, 0);
 
-  const hasFilters = search || filterInstrument || filterSector;
+  const hasFilters = search || filterInstrument || filterSector || filterVolMin || filterVolMax;
 
   return (
     <div className="relative">
@@ -404,9 +408,28 @@ export default function DealFlowPage({ deals: dealsProp }: { deals?: Deal[] }) {
           ))}
         </select>
 
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11.5px] text-[#94a3b8] whitespace-nowrap">Volume:</span>
+          <input
+            type="number"
+            placeholder="Mín (M)"
+            value={filterVolMin}
+            onChange={e => setFilterVolMin(e.target.value)}
+            className="w-[78px] py-[7px] px-2.5 text-[12.5px] border border-[#e2e8f0] rounded-[7px] outline-none focus:border-[#1a6edb] text-[#475569] transition-all"
+          />
+          <span className="text-[#94a3b8] text-[11px]">–</span>
+          <input
+            type="number"
+            placeholder="Máx (M)"
+            value={filterVolMax}
+            onChange={e => setFilterVolMax(e.target.value)}
+            className="w-[78px] py-[7px] px-2.5 text-[12.5px] border border-[#e2e8f0] rounded-[7px] outline-none focus:border-[#1a6edb] text-[#475569] transition-all"
+          />
+        </div>
+
         {hasFilters && (
           <button
-            onClick={() => { setSearch(''); setFilterInstrument(''); setFilterSector(''); }}
+            onClick={() => { setSearch(''); setFilterInstrument(''); setFilterSector(''); setFilterVolMin(''); setFilterVolMax(''); }}
             className="flex items-center gap-1.5 text-[12px] text-[#64748b] hover:text-[#dc2626] transition-colors"
           >
             <i className="fas fa-times-circle text-[12px]"></i>
@@ -508,6 +531,12 @@ function DealCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
         </span>
         <span className="text-[10px] text-[#94a3b8] flex-shrink-0">
           {deal.lastUpdate}
+        </span>
+      </div>
+      <div className="flex items-center gap-1 mt-1.5">
+        <i className="fas fa-coins text-[9px] text-[#059669]"></i>
+        <span className="text-[10px] text-[#059669] font-medium">
+          Com. est.: R$ {(deal.value * 15).toLocaleString('pt-BR')}k
         </span>
       </div>
       {deal.stage !== 'concluido' && (() => {

@@ -59,6 +59,8 @@ interface GarantiaItem {
   tipo: string;
   hierarquia: 'Principal' | 'Complementar' | 'Adicional';
   valor: string;
+  valorMercado?: string;
+  fileName?: string;
 }
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -577,6 +579,18 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                   placeholder="Descreva como os recursos captados serão utilizados (expansão, capital de giro, refinanciamento, projetos específicos)..."
                   rows={4}
                 />
+
+                <div>
+                  <div className="text-[13px] font-medium text-[#1e293b] mb-1.5">
+                    Documentos do Emissor <span className="text-[11px] text-[#94a3b8] font-normal">(opcional)</span>
+                  </div>
+                  <label className="block border-2 border-dashed border-[#e2e8f0] rounded-xl p-6 text-center hover:border-[#1a6edb]/50 hover:bg-[#f8faff] transition-all cursor-pointer">
+                    <i className="fas fa-cloud-upload-alt text-[24px] text-[#94a3b8] mb-2 block"></i>
+                    <div className="text-[12.5px] font-semibold text-[#0b1f3a] mb-0.5">Arraste ou clique para selecionar</div>
+                    <div className="text-[11px] text-[#94a3b8]">DRE, Balanço, Fluxo de Caixa, Declaração IR… PDF, XLSX, máx. 10 MB por arquivo</div>
+                    <input type="file" multiple accept=".pdf,.xlsx,.xls,.doc,.docx" className="hidden" />
+                  </label>
+                </div>
               </div>
             )}
 
@@ -602,7 +616,7 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                         </button>
                       )}
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4 mb-3">
                       <Select
                         label="Tipo de Garantia"
                         value={g.tipo}
@@ -628,13 +642,74 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                           { value: 'Adicional',    label: 'Adicional (3ª camada)'    },
                         ]}
                       />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <Input
-                        label="Valor (R$ MM)"
+                        label="Valor declarado (R$ MM)"
                         value={g.valor}
                         onChange={e => setGarantias(prev => prev.map(x => x.id === g.id ? { ...x, valor: e.target.value.replace(/\D/g,'').slice(0,5) } : x))}
                         placeholder="Ex: 75"
                         rightIcon={<span className="text-[11px] font-semibold">MM</span>}
                       />
+                      <Input
+                        label="Valor de mercado (R$ MM)"
+                        value={g.valorMercado ?? ''}
+                        onChange={e => setGarantias(prev => prev.map(x => x.id === g.id ? { ...x, valorMercado: e.target.value.replace(/\D/g,'').slice(0,5) } : x))}
+                        placeholder="Laudo / avaliação"
+                        rightIcon={<span className="text-[11px] font-semibold">MM</span>}
+                      />
+                    </div>
+
+                    {/* 3.2 Delta valor de mercado vs. declarado */}
+                    {(() => {
+                      const vD = parseMM(g.valor);
+                      const vM = parseMM(g.valorMercado ?? '');
+                      if (!vD || !vM) return null;
+                      const delta = ((vM - vD) / vD) * 100;
+                      const up = delta >= 0;
+                      return (
+                        <div className={`mt-2 flex items-center gap-1.5 text-[11px] font-medium ${up ? 'text-[#059669]' : 'text-[#dc2626]'}`}>
+                          <i className={`fas fa-arrow-${up ? 'up' : 'down'} text-[9px]`}></i>
+                          Mercado {up ? 'acima' : 'abaixo'} em {Math.abs(delta).toFixed(1)}% vs. valor declarado
+                        </div>
+                      );
+                    })()}
+
+                    {/* 3.4 LTV individual */}
+                    {volumeMM > 0 && parseMM(g.valor) > 0 && (() => {
+                      const ltvInd = Math.round((parseMM(g.valor) / volumeMM) * 100);
+                      const color = ltvInd >= 30 ? '#059669' : ltvInd >= 15 ? '#d97706' : '#dc2626';
+                      return (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium" style={{ color }}>
+                          <i className="fas fa-shield-alt text-[9px]"></i>
+                          Cobertura individual: {ltvInd}% do volume
+                        </div>
+                      );
+                    })()}
+
+                    {/* 3.3 Upload por garantia */}
+                    <div className="mt-3 pt-3 border-t border-[#e2e8f0] flex items-center gap-3">
+                      <label className="flex items-center gap-1.5 text-[11.5px] font-semibold text-[#64748b] hover:text-[#1a6edb] cursor-pointer transition-colors">
+                        <i className="fas fa-paperclip text-[10px]"></i>
+                        {g.fileName ? g.fileName : 'Anexar documento'}
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.jpg,.png"
+                          className="hidden"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) setGarantias(prev => prev.map(x => x.id === g.id ? { ...x, fileName: file.name } : x));
+                          }}
+                        />
+                      </label>
+                      {g.fileName && (
+                        <button
+                          onClick={() => setGarantias(prev => prev.map(x => x.id === g.id ? { ...x, fileName: undefined } : x))}
+                          className="text-[10px] text-[#94a3b8] hover:text-[#dc2626] transition-colors"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

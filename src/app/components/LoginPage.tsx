@@ -25,15 +25,18 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    localStorage.setItem('bloxs_auth', '1');
     navigate('/dashboard');
   };
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
+    localStorage.setItem('bloxs_auth', '1');
     navigate('/onboarding');
   };
 
   const handleSocialLogin = () => {
+    localStorage.setItem('bloxs_auth', '1');
     setTimeout(() => navigate('/dashboard'), 1400);
   };
 
@@ -429,7 +432,7 @@ export default function LoginPage() {
             <br />
             Explore o painel do originador sem cadastro obrigatório.
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => { localStorage.setItem('bloxs_auth', '1'); navigate('/dashboard'); }}
               className="block w-full mt-2.5 py-2.5 bg-[#1a6edb] text-white rounded-[7px] text-[13.5px] font-semibold transition-all hover:bg-[#0b1f3a]"
             >
               Entrar como demonstração →
