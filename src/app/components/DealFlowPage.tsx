@@ -76,6 +76,93 @@ function daysInStage(deal: Deal): number {
   return Math.max(0, Math.round((today.getTime() - from.getTime()) / 86400000));
 }
 
+// ─── SCORE DE QUALIDADE (6.4) ─────────────────────────────────────────────────
+
+interface ScoreItem {
+  label: string;
+  score: number;
+  max: number;
+  note: string;
+}
+
+interface ScoreBreakdown {
+  total: number;
+  grade: 'A' | 'B' | 'C' | 'D';
+  items: ScoreItem[];
+}
+
+const STAGE_SCORE: Record<string, number> = {
+  originacao: 5, analise: 10, diligencia: 15, comite: 20, estruturacao: 25, concluido: 25,
+};
+const STAGE_SCORE_NOTE: Record<string, string> = {
+  originacao: 'Início do pipeline', analise: 'Análise de crédito', diligencia: 'Due diligence',
+  comite: 'Aguardando comitê', estruturacao: 'Estruturação final', concluido: 'Emitida',
+};
+const INSTR_SCORE: Record<string, number> = {
+  CRI: 20, CRA: 20, FIDC: 18, Debênture: 16, CR: 14, 'Nota Comercial': 12, 'A definir': 8,
+};
+const INSTR_NOTE: Record<string, string> = {
+  CRI: 'Regulado — isenção IR PF', CRA: 'Regulado — isenção IR PF',
+  FIDC: 'Veículo securitizado', Debênture: 'Debênture incentivada',
+  CR: 'Certificado de Recebíveis', 'Nota Comercial': 'Instrumento de curto prazo',
+  'A definir': 'Instrumento não definido',
+};
+
+function calcScore(deal: Deal): ScoreBreakdown {
+  const items: ScoreItem[] = [];
+
+  // SLA / Tempestividade — 25 pts
+  const days  = daysInStage(deal);
+  const avg   = STAGE_AVG_DAYS[deal.stage] ?? 10;
+  const ratio = deal.stage === 'concluido' ? 0 : days / avg;
+  const slaScore = ratio <= 1 ? 25 : ratio <= 1.5 ? 15 : 5;
+  items.push({
+    label: 'SLA / Tempestividade', score: slaScore, max: 25,
+    note: ratio <= 1 ? 'Dentro do prazo médio' : ratio <= 1.5 ? 'Levemente acima da média' : 'SLA excedido',
+  });
+
+  // Progressão no pipeline — 25 pts
+  items.push({
+    label: 'Estágio no Pipeline', score: STAGE_SCORE[deal.stage] ?? 5, max: 25,
+    note: STAGE_SCORE_NOTE[deal.stage] ?? '',
+  });
+
+  // Instrumento — 20 pts
+  items.push({
+    label: 'Instrumento', score: INSTR_SCORE[deal.instrument] ?? 8, max: 20,
+    note: INSTR_NOTE[deal.instrument] ?? 'Instrumento não mapeado',
+  });
+
+  // Volume — 15 pts
+  const volScore = deal.value >= 80 ? 15 : deal.value >= 50 ? 12 : deal.value >= 30 ? 8 : 5;
+  items.push({
+    label: 'Volume da Operação', score: volScore, max: 15,
+    note: `R$ ${deal.value}M — ${deal.value >= 80 ? 'Grande porte' : deal.value >= 50 ? 'Médio porte' : 'Pequeno porte'}`,
+  });
+
+  // Completude dos dados — 15 pts
+  const dataScore = (deal.location ? 5 : 0)
+    + (deal.description.length > 50 ? 5 : 0)
+    + (deal.timeline.length >= 3 ? 5 : 0);
+  items.push({
+    label: 'Completude dos Dados', score: dataScore, max: 15,
+    note: dataScore >= 12 ? 'Documentação completa' : dataScore >= 8 ? 'Dados parcialmente preenchidos' : 'Documentação básica',
+  });
+
+  const total = items.reduce((s, i) => s + i.score, 0);
+  const grade = total >= 80 ? 'A' : total >= 65 ? 'B' : total >= 50 ? 'C' : 'D';
+  return { total, grade, items };
+}
+
+const GRADE_STYLE: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  A: { bg: '#f0fdf4', text: '#15803d', border: '#86efac', label: 'Excelente' },
+  B: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', label: 'Bom'       },
+  C: { bg: '#fffbeb', text: '#d97706', border: '#fde68a', label: 'Regular'   },
+  D: { bg: '#fef2f2', text: '#dc2626', border: '#fecaca', label: 'Atenção'   },
+};
+
+// ─── DEAL SPREADS ─────────────────────────────────────────────────────────────
+
 const DEAL_SPREADS: Record<string, number> = {
   'CRI': 3.5, 'CRA': 4.0, 'FIDC': 5.0, 'Debênture': 2.5,
   'CR': 3.0, 'Nota Comercial': 2.0, 'A definir': 3.0,
@@ -510,15 +597,30 @@ function DealCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
       onClick={onClick}
       className="w-full text-left bg-white border border-[#e2e8f0] rounded-[8px] p-3.5 cursor-pointer hover:border-[#1a6edb] hover:shadow-[0_2px_12px_rgba(26,110,219,0.10)] transition-all group"
     >
-      <div className="flex items-start justify-between gap-2 mb-2.5">
-        <span
-          className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full leading-5"
-          style={{ backgroundColor: style.bg, color: style.text }}
-        >
-          {deal.instrument}
-        </span>
-        <i className="fas fa-chevron-right text-[10px] text-[#d1d5db] group-hover:text-[#1a6edb] transition-colors mt-0.5 flex-shrink-0"></i>
-      </div>
+      {(() => {
+        const sc = calcScore(deal);
+        const gs = GRADE_STYLE[sc.grade];
+        return (
+          <div className="flex items-start justify-between gap-2 mb-2.5">
+            <span
+              className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full leading-5"
+              style={{ backgroundColor: style.bg, color: style.text }}
+            >
+              {deal.instrument}
+            </span>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] border"
+                style={{ backgroundColor: gs.bg, color: gs.text, borderColor: gs.border }}
+                title={`Score ${sc.total}/100 — ${gs.label}`}
+              >
+                {sc.grade} {sc.total}
+              </span>
+              <i className="fas fa-chevron-right text-[10px] text-[#d1d5db] group-hover:text-[#1a6edb] transition-colors mt-0.5"></i>
+            </div>
+          </div>
+        );
+      })()}
       <div className="text-[13px] font-semibold text-[#0b1f3a] mb-1 leading-snug">
         {deal.title}
       </div>
@@ -632,6 +734,79 @@ function DealPanel({ deal, onClose }: { deal: Deal; onClose: () => void }) {
               {deal.instrument}
             </span>
           </div>
+
+          {/* ── 6.4 Score de Qualidade da Operação ───────────────────────── */}
+          {(() => {
+            const sc = calcScore(deal);
+            const gs = GRADE_STYLE[sc.grade];
+            return (
+              <div
+                className="rounded-[10px] border p-4"
+                style={{ background: gs.bg, borderColor: gs.border }}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-star text-[12px]" style={{ color: gs.text }}></i>
+                    <span className="text-[11px] font-bold uppercase tracking-[0.08em]" style={{ color: gs.text }}>
+                      Score de Qualidade
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-['Playfair_Display'] text-[22px] font-semibold leading-none" style={{ color: gs.text }}>
+                      {sc.total}
+                    </span>
+                    <div className="text-right">
+                      <div className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: gs.text }}>
+                        /100
+                      </div>
+                      <div
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full border mt-0.5"
+                        style={{ backgroundColor: 'white', color: gs.text, borderColor: gs.border }}
+                      >
+                        {gs.label}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Barra de progresso */}
+                <div className="h-1.5 bg-white/60 rounded-full overflow-hidden mb-3">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${sc.total}%`, backgroundColor: gs.text }}
+                  />
+                </div>
+
+                {/* Breakdown por critério */}
+                <div className="space-y-2">
+                  {sc.items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10.5px] font-semibold" style={{ color: gs.text }}>
+                            {item.label}
+                          </span>
+                          <span className="text-[10px] font-bold flex-shrink-0 ml-2" style={{ color: gs.text }}>
+                            {item.score}/{item.max}
+                          </span>
+                        </div>
+                        <div className="h-1 bg-white/50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${(item.score / item.max) * 100}%`, backgroundColor: gs.text, opacity: 0.7 }}
+                          />
+                        </div>
+                        <div className="text-[10px] mt-0.5" style={{ color: gs.text, opacity: 0.75 }}>
+                          {item.note}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── 4.2 Checklist de critérios de avanço ─────────────────────── */}
           {criteria.length > 0 && deal.stage !== 'concluido' && (
