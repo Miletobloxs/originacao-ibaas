@@ -117,6 +117,7 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
   const [eligWarning,  setEligWarning]  = useState(false);
   const [showTeaser,   setShowTeaser]   = useState(false);
   const [teaserLoading, setTeaserLoading] = useState(false);
+  const [showDCC,      setShowDCC]      = useState(false);
 
   function field<K extends keyof FormState>(key: K, val: FormState[K]) {
     setForm(f => ({ ...f, [key]: val }));
@@ -764,6 +765,71 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                     <div className="text-[13px] font-semibold text-[#0b1f3a] mb-1">Arraste arquivos ou clique para selecionar</div>
                     <div className="text-[11px] text-[#94a3b8]">Laudo de avaliação, matrícula do imóvel, contrato de cessão… PDF ou DOCX, máx. 10 MB</div>
                   </div>
+                </div>
+
+                {/* ── Protocolo DCC ─────────────────────────────────────── */}
+                <div className="border border-[#e2e8f0] rounded-xl overflow-hidden">
+                  {/* Toggle header */}
+                  <button
+                    onClick={() => setShowDCC(v => !v)}
+                    className="w-full flex items-center justify-between px-5 py-4 bg-[#fafbfc] hover:bg-[#f1f5f9] transition-colors text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-[8px] bg-[#0b1f3a] flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-cube text-white text-[12px]"></i>
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-semibold text-[#0b1f3a] flex items-center gap-2">
+                          Protocolo DCC
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ede9fe] text-[#6d28d9]">
+                            Novo
+                          </span>
+                        </div>
+                        <div className="text-[11.5px] text-[#64748b] mt-0.5">
+                          Registre suas garantias on-chain via Bloxs Blockchain
+                        </div>
+                      </div>
+                    </div>
+                    <i className={`fas fa-chevron-${showDCC ? 'up' : 'down'} text-[11px] text-[#94a3b8] group-hover:text-[#0b1f3a] transition-all flex-shrink-0`}></i>
+                  </button>
+
+                  {/* Conteúdo expansível */}
+                  {showDCC && (
+                    <div className="px-5 py-5 border-t border-[#e2e8f0] space-y-4">
+                      <p className="text-[13px] text-[#475569] leading-relaxed">
+                        O <strong className="text-[#0b1f3a]">Protocolo DCC (Digital Credit Certificate)</strong> é a infraestrutura blockchain da Bloxs para registro imutável de garantias e direitos creditórios. Ao aderir, cada camada de garantia desta operação recebe um <strong className="text-[#0b1f3a]">token on-chain</strong> vinculado ao contrato, garantindo rastreabilidade, transparência e liquidez no mercado secundário.
+                      </p>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { icon: 'fa-link',          title: 'Registro imutável',     desc: 'Hash da garantia gravado na blockchain — à prova de alteração.' },
+                          { icon: 'fa-exchange-alt',  title: 'Liquidez secundária',   desc: 'Tokens negociáveis entre investidores qualificados após emissão.' },
+                          { icon: 'fa-shield-check',  title: 'Conformidade regulada', desc: 'Protocolo alinhado à sandbox da CVM e infraestrutura DREX.' },
+                        ].map((item, i) => (
+                          <div key={i} className="bg-[#f8fafc] rounded-[10px] p-3.5 border border-[#e2e8f0]">
+                            <div className="w-7 h-7 rounded-[6px] bg-[#0b1f3a] flex items-center justify-center mb-2.5">
+                              <i className={`fas ${item.icon} text-white text-[10px]`}></i>
+                            </div>
+                            <div className="text-[12px] font-semibold text-[#0b1f3a] mb-1">{item.title}</div>
+                            <div className="text-[11px] text-[#64748b] leading-relaxed">{item.desc}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <p className="text-[11px] text-[#94a3b8] leading-relaxed max-w-[360px]">
+                          A adesão é opcional e não impacta o fluxo de aprovação. A tokenização ocorre após a emissão da operação.
+                        </p>
+                        <button
+                          onClick={() => window.open('https://bloxs.com.br', '_blank')}
+                          className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-[#0b1f3a] text-white text-[12.5px] font-semibold rounded-[8px] hover:bg-[#1a6edb] transition-all"
+                        >
+                          <i className="fas fa-arrow-right text-[10px]"></i>
+                          Quero conhecer
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
