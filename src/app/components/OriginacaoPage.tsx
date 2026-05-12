@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   PageHeader, Card, CardBody,
   Button, Input, Select, Textarea, Stepper, InfoBox
@@ -118,6 +118,14 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
   const [showTeaser,   setShowTeaser]   = useState(false);
   const [teaserLoading, setTeaserLoading] = useState(false);
   const [showDCC,      setShowDCC]      = useState(false);
+  const [hsSync,       setHsSync]       = useState<'idle' | 'syncing' | 'done'>('idle');
+
+  useEffect(() => {
+    if (!enviado) return;
+    setHsSync('syncing');
+    const t = setTimeout(() => setHsSync('done'), 2500);
+    return () => clearTimeout(t);
+  }, [enviado]);
 
   function field<K extends keyof FormState>(key: K, val: FormState[K]) {
     setForm(f => ({ ...f, [key]: val }));
@@ -240,6 +248,40 @@ export default function OriginacaoPage({ onNavigate, onNewDeal }: Props) {
                 </div>
               ))}
             </div>
+            {/* HubSpot sync status */}
+            <div className={`flex items-center gap-3 rounded-xl px-4 py-3 mb-4 border transition-all ${
+              hsSync === 'done'
+                ? 'bg-[#fff4f0] border-[#ffd5c8]'
+                : 'bg-[#f8fafc] border-[#e2e8f0]'
+            }`}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#ff7a59' }}>
+                {hsSync === 'syncing' ? (
+                  <i className="fas fa-spinner fa-spin text-white text-[12px]"></i>
+                ) : hsSync === 'done' ? (
+                  <i className="fas fa-check text-white text-[12px]"></i>
+                ) : (
+                  <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.4 14.2c-.4-1.3-1.3-2.4-2.5-3.1V8.4c0-1.3-1.1-2.4-2.4-2.4s-2.4 1.1-2.4 2.4v.8c-.7-.1-1.4-.1-2.1 0V8.4c0-1.3-1.1-2.4-2.4-2.4S8.2 7.1 8.2 8.4v2.7C7 11.8 6.1 12.9 5.7 14.2c-.7 2.4.2 5 2.2 6.5 1.1.8 2.4 1.3 3.7 1.3h4.6c1.4 0 2.7-.5 3.7-1.3 2.1-1.5 3-4.1 2.5-6.5z"/>
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1 text-left">
+                <div className="text-[12px] font-semibold text-[#0b1f3a]">
+                  {hsSync === 'syncing' && 'Criando deal no HubSpot CRM…'}
+                  {hsSync === 'done'    && 'Deal criado no HubSpot CRM'}
+                  {hsSync === 'idle'    && 'Aguardando sincronização com HubSpot'}
+                </div>
+                <div className="text-[11px] text-[#64748b] mt-0.5">
+                  {hsSync === 'syncing' && 'Sincronizando dados da operação…'}
+                  {hsSync === 'done'    && `Deal #${40000 + parseInt(opId.replace('OP-', '')) * 3} · Pipeline: Appointment Scheduled · Proprietário: Rafael Andrade`}
+                  {hsSync === 'idle'    && 'A operação será sincronizada automaticamente após a submissão.'}
+                </div>
+              </div>
+              {hsSync === 'done' && (
+                <span className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ff7a59] text-white">HS</span>
+              )}
+            </div>
+
             <div className="flex gap-3 justify-center flex-wrap">
               <Button
                 variant="primary"

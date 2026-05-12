@@ -161,6 +161,30 @@ const GRADE_STYLE: Record<string, { bg: string; text: string; border: string; la
   D: { bg: '#fef2f2', text: '#dc2626', border: '#fecaca', label: 'Atenção'   },
 };
 
+// ─── HUBSPOT ──────────────────────────────────────────────────────────────────
+
+const HS_STAGES = [
+  'Appointment Scheduled',
+  'Qualified to Buy',
+  'Presentation Scheduled',
+  'Decision Maker Bought-In',
+  'Contract Sent',
+  'Closed Won',
+];
+
+const HS_STAGE_INDEX: Record<string, number> = {
+  originacao: 0, analise: 1, diligencia: 2, comite: 3, estruturacao: 4, concluido: 5,
+};
+
+const HS_CLOSE_DATE: Record<string, string> = {
+  originacao: '30/10/2026', analise: '30/09/2026', diligencia: '31/08/2026',
+  comite: '30/07/2026', estruturacao: '30/06/2026', concluido: '15/03/2026',
+};
+
+function hsDealId(deal: Deal) {
+  return 40000 + parseInt(deal.id) * 1237;
+}
+
 // ─── DEAL SPREADS ─────────────────────────────────────────────────────────────
 
 const DEAL_SPREADS: Record<string, number> = {
@@ -635,11 +659,17 @@ function DealCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
           {deal.lastUpdate}
         </span>
       </div>
-      <div className="flex items-center gap-1 mt-1.5">
-        <i className="fas fa-coins text-[9px] text-[#059669]"></i>
-        <span className="text-[10px] text-[#059669] font-medium">
-          Com. est.: R$ {(deal.value * 15).toLocaleString('pt-BR')}k
-        </span>
+      <div className="flex items-center justify-between mt-1.5">
+        <div className="flex items-center gap-1">
+          <i className="fas fa-coins text-[9px] text-[#059669]"></i>
+          <span className="text-[10px] text-[#059669] font-medium">
+            Com. est.: R$ {(deal.value * 15).toLocaleString('pt-BR')}k
+          </span>
+        </div>
+        <div className="flex items-center gap-1 bg-[#fff4f0] border border-[#ffd5c8] rounded-full px-1.5 py-0.5">
+          <span className="w-1 h-1 rounded-full bg-[#ff7a59]"></span>
+          <span className="text-[9px] font-semibold text-[#ff7a59]">HS</span>
+        </div>
       </div>
       {deal.stage !== 'concluido' && (() => {
         const days = daysInStage(deal);
@@ -672,6 +702,8 @@ function DealPanel({ deal, onClose }: { deal: Deal; onClose: () => void }) {
   const [checkedItems,  setCheckedItems]  = useState<string[]>([]);
   const [resolvedIds,   setResolvedIds]   = useState<string[]>([]);
   const [showSim,       setShowSim]       = useState(false);
+  const [showHubSpot,   setShowHubSpot]   = useState(false);
+  const [hsSyncing,     setHsSyncing]     = useState(false);
   const [sim, setSim] = useState({
     investimento: '1000000',
     prazo: '24',
@@ -1089,8 +1121,13 @@ function DealPanel({ deal, onClose }: { deal: Deal; onClose: () => void }) {
             <i className="fas fa-edit text-[12px]"></i>
             Editar
           </button>
-          <button className="py-2.5 px-4 border border-[#e2e8f0] text-[#475569] text-[13px] font-medium rounded-[8px] hover:border-[#0b1f3a] hover:text-[#0b1f3a] transition-all flex items-center gap-2">
-            <i className="fas fa-external-link-alt text-[11px]"></i>
+          <button
+            onClick={() => setShowHubSpot(true)}
+            className="py-2.5 px-4 border border-[#e2e8f0] text-[#475569] text-[13px] font-medium rounded-[8px] hover:border-[#ff7a59] hover:text-[#ff7a59] transition-all flex items-center gap-2"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.4 14.2c-.4-1.3-1.3-2.4-2.5-3.1V8.4c0-1.3-1.1-2.4-2.4-2.4s-2.4 1.1-2.4 2.4v.8c-.7-.1-1.4-.1-2.1 0V8.4c0-1.3-1.1-2.4-2.4-2.4S8.2 7.1 8.2 8.4v2.7C7 11.8 6.1 12.9 5.7 14.2c-.7 2.4.2 5 2.2 6.5 1.1.8 2.4 1.3 3.7 1.3h4.6c1.4 0 2.7-.5 3.7-1.3 2.1-1.5 3-4.1 2.5-6.5z"/>
+            </svg>
             HubSpot
           </button>
           <button className="py-2.5 px-4 border border-[#e2e8f0] text-[#475569] text-[13px] font-medium rounded-[8px] hover:border-[#dc2626] hover:text-[#dc2626] transition-all flex items-center gap-2">
@@ -1099,6 +1136,146 @@ function DealPanel({ deal, onClose }: { deal: Deal; onClose: () => void }) {
           </button>
         </div>
       </div>
+
+      {/* ── Modal HubSpot CRM ─────────────────────────────────────────── */}
+      {showHubSpot && (() => {
+        const hsIdx    = HS_STAGE_INDEX[deal.stage] ?? 0;
+        const dealId   = hsDealId(deal);
+        const closeDate = HS_CLOSE_DATE[deal.stage] ?? '—';
+        return (
+          <>
+            <div className="fixed inset-0 bg-black/40 z-[700]" onClick={() => setShowHubSpot(false)} />
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] bg-white rounded-2xl shadow-2xl z-[800] overflow-hidden flex flex-col max-h-[90vh]">
+
+              {/* Header laranja HubSpot */}
+              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#ff7a59' }}>
+                <div className="flex items-center gap-2.5">
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.4 14.2c-.4-1.3-1.3-2.4-2.5-3.1V8.4c0-1.3-1.1-2.4-2.4-2.4s-2.4 1.1-2.4 2.4v.8c-.7-.1-1.4-.1-2.1 0V8.4c0-1.3-1.1-2.4-2.4-2.4S8.2 7.1 8.2 8.4v2.7C7 11.8 6.1 12.9 5.7 14.2c-.7 2.4.2 5 2.2 6.5 1.1.8 2.4 1.3 3.7 1.3h4.6c1.4 0 2.7-.5 3.7-1.3 2.1-1.5 3-4.1 2.5-6.5z"/>
+                  </svg>
+                  <div>
+                    <div className="text-white text-[11px] font-semibold tracking-[0.08em] uppercase opacity-80">HubSpot CRM</div>
+                    <div className="text-white text-[13px] font-bold leading-tight">{deal.title}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                    <span className="text-white text-[10.5px] font-semibold">Sincronizado</span>
+                  </div>
+                  <button onClick={() => setShowHubSpot(false)} className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all">
+                    <i className="fas fa-times text-white text-[12px]"></i>
+                  </button>
+                </div>
+              </div>
+
+              {/* Pipeline de estágios */}
+              <div className="px-6 py-4 bg-[#f5f8fa] border-b border-[#e2e8f0]">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#516f90] mb-2.5">Estágio no Pipeline</div>
+                <div className="flex items-center gap-0">
+                  {HS_STAGES.map((s, i) => {
+                    const active  = i === hsIdx;
+                    const past    = i < hsIdx;
+                    return (
+                      <div key={i} className="flex items-center flex-1 min-w-0">
+                        <div className="flex flex-col items-center flex-1 min-w-0 gap-1">
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+                            style={{
+                              backgroundColor: active ? '#ff7a59' : past ? '#00bda5' : '#e2e8f0',
+                            }}
+                          >
+                            {past
+                              ? <i className="fas fa-check text-white text-[7px]"></i>
+                              : active
+                              ? <div className="w-2 h-2 rounded-full bg-white"></div>
+                              : <div className="w-2 h-2 rounded-full bg-[#94a3b8]"></div>
+                            }
+                          </div>
+                          <span className="text-[8.5px] text-center leading-tight px-0.5 truncate w-full text-center" style={{ color: active ? '#ff7a59' : past ? '#00bda5' : '#94a3b8', fontWeight: active ? 700 : 400 }}>
+                            {s.split(' ').slice(0, 2).join(' ')}
+                          </span>
+                        </div>
+                        {i < HS_STAGES.length - 1 && (
+                          <div className="h-px flex-shrink-0 w-3 -mt-4" style={{ backgroundColor: i < hsIdx ? '#00bda5' : '#e2e8f0' }}></div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Corpo scrollável */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+                {/* Propriedades */}
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#516f90] mb-2.5">Propriedades do Deal</div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {[
+                      { label: 'Deal ID',        value: `#${dealId}` },
+                      { label: 'Valor',           value: `R$ ${deal.value}M` },
+                      { label: 'Empresa',         value: deal.title },
+                      { label: 'Setor',           value: deal.sector },
+                      { label: 'Instrumento',     value: deal.instrument },
+                      { label: 'Proprietário',    value: deal.responsible },
+                      { label: 'Previsão de fechamento', value: closeDate },
+                      { label: 'Última atividade', value: deal.lastUpdate },
+                    ].map((p, i) => (
+                      <div key={i} className="bg-[#f5f8fa] rounded-[8px] px-3.5 py-2.5">
+                        <div className="text-[9.5px] font-semibold uppercase tracking-[0.07em] text-[#516f90] mb-0.5">{p.label}</div>
+                        <div className="text-[12.5px] font-semibold text-[#2d3648]">{p.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Atividade recente */}
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#516f90] mb-2.5">Atividade Recente</div>
+                  <div className="space-y-2">
+                    {deal.timeline.slice(0, 3).map((ev, i) => (
+                      <div key={i} className="flex items-start gap-2.5 text-[12px]">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#ff7a59] mt-1.5 flex-shrink-0"></div>
+                        <div>
+                          <span className="font-medium text-[#2d3648]">{ev.event}</span>
+                          <span className="text-[#516f90] ml-1.5">· {ev.date} · {ev.author}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Footer com ações */}
+              <div className="px-6 py-4 border-t border-[#e2e8f0] bg-[#f5f8fa] flex items-center gap-2.5">
+                <button
+                  className="flex-1 py-2.5 text-white text-[13px] font-semibold rounded-[8px] flex items-center justify-center gap-2 transition-all"
+                  style={{ backgroundColor: '#ff7a59' }}
+                  onClick={() => window.open('https://app.hubspot.com', '_blank')}
+                >
+                  <i className="fas fa-external-link-alt text-[11px]"></i>
+                  Abrir no HubSpot
+                </button>
+                <button
+                  onClick={() => {
+                    setHsSyncing(true);
+                    setTimeout(() => setHsSyncing(false), 2000);
+                  }}
+                  disabled={hsSyncing}
+                  className="py-2.5 px-4 border border-[#e2e8f0] text-[#2d3648] text-[13px] font-medium rounded-[8px] hover:bg-[#e2e8f0] transition-all flex items-center gap-2 disabled:opacity-60"
+                >
+                  <i className={`fas ${hsSyncing ? 'fa-spinner fa-spin' : 'fa-sync-alt'} text-[11px]`}></i>
+                  {hsSyncing ? 'Sincronizando…' : 'Sincronizar'}
+                </button>
+              </div>
+
+            </div>
+          </>
+        );
+      })()}
     </>
   );
 }
+
