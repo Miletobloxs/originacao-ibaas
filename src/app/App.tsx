@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import LoginPage from './components/LoginPage';
 import OnboardingPage from './components/OnboardingPage';
 import DashboardPage from './components/DashboardPage';
@@ -13,6 +14,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors />
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />

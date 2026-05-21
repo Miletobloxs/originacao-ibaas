@@ -14,7 +14,7 @@ import DocumentosPage from './DocumentosPage';
 import HistoricoPage from './HistoricoPage';
 import WalletPage from './WalletPage';
 import PerfilPage from './PerfilPage';
-import OriginacaoPage from './OriginacaoPage';
+import OriginacaoWizard from './OriginacaoWizard';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -565,7 +565,7 @@ export default function DashboardPage() {
 
           {/* ── ORIGINAR ──────────────────────────────────────────────────── */}
           {activePage === 'originar' && (
-            <OriginacaoPage onNavigate={(p) => nav(p as PageId)} onNewDeal={addDeal} />
+            <OriginacaoWizard onNavigate={(p) => nav(p as PageId)} onNewDeal={addDeal} />
           )}
 
           {/* ── OTHER PAGES ───────────────────────────────────────────────── */}
